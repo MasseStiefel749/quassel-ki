@@ -7,6 +7,7 @@ hardware:
 
 modelle:
   auto_select: true
+  max_modell_gb: null   # null = automatisch aus Hardware-Profil
   rollen:
     fast: ["llama3.1:latest", "llama3.1"]
     coding: ["quassel-ki:latest", "quassel-ki"]
@@ -22,6 +23,14 @@ memory:
 context:
   adaptive: true
   verlauf_limit: 10
+  budgets: {TRIVIAL: 4096, LOW: 4096, MEDIUM: 8192, HIGH: 16384, MAX: 32768}
+
+chat:
+  tokens: 400   # Antwortlänge Chat (Schmiede/Agent nutzen eigene Budgets)
+
+ollama:
+  keep_alive: 30m
+  num_ctx: 8192   # Fallback, wenn context.adaptive aus ist
 
 agent:
   enabled: true

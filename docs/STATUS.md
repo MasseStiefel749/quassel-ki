@@ -12,9 +12,18 @@
 - Tests Ausgangszustand: **27/27 grün** (v18: 17, v19: 10).
 - Entscheidungen in `docs/DECISIONS.md` begonnen (E1–E7).
 
-## Nächste Phasen
+## Phase 2 – HARDWARE UND MODELLE (02.10.2026, erledigt, BESTÄTIGT)
 
-- Phase 2: Hardware-Profile + yaml (Modellwahl, ctx, Tokens, Keep-Alive).
+- `hardware_klasse()` + `empfehlung()`: high/medium/small/cpu aus VRAM
+  mit Abwärts-Korrektur (3060→medium, A1000→small). Echte Messung, Tabelle.
+- Kapazitätsschutz im Router (`max_gb` + Ollama-Größen); Alias-Bypass per
+  Test gefunden + gefixt.
+- yaml: `modelle.max_modell_gb`, `context.budgets`, `chat.tokens`,
+  `ollama.keep_alive/num_ctx`. Env überschreibt nur wenn gesetzt.
+- Start-Banner (`_hw_banner`) dokumentiert Klasse + Modelle + Tokens.
+- Kleine Modelle für Router/Memory/Live: BESTÄTIGT (`fast`-Rolle =
+  llama3.1, Live nutzt llama3.1 + moondream).
+- Tests: 41/41 grün (v18: 17, v19: 10, v20: 14).
 - Phase 3: Memory vereinheitlichen (Typen, Ablauf, Priorisierung).
 - Phase 4: Unreal-Scanner vertiefen.
 - Danach: 5 Schmiede, 6 Build/Logs, 7 Impact, 8 Agent, 9+10 Doku/Gate.

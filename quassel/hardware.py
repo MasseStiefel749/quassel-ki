@@ -114,6 +114,77 @@ def profil():
             "modus": "LOCAL MAXIMUM INTELLIGENCE" if kapazitaet in ("HIGH", "MEDIUM") else "LOCAL ECO MODE"}
 
 
+# Bekannte Karten mit Sonderverhalten (Name-Fragment -> Klasse). Sonst zählt nur VRAM.
+# Begründung: Eine RTX 3060 12GB KANN 30B laden, ist dabei aber so langsam, dass
+# 7–14B-Modelle praktisch mehr Intelligenz pro Sekunde liefern (siehe DECISIONS E8).
+_KARTEN_KORREKTUR = (
+    ("3060", "medium"),
+    ("4060", "medium"),
+    ("a1000", "small"),
+    ("a2000", "medium"),
+    ("t1000", "small"),
+    ("t600", "small"),
+    ("p1000", "small"),
+    ("p620", "small"),
+    ("mx", "small"),
+    ("uhd", "cpu"),
+    ("iris", "cpu"),
+    ("radeon", "cpu"),  # kein CUDA -> CPU-Klasse (Ollama CPU/Vulkan je nach Build)
+    ("vega", "cpu"),
+)
+
+
+def hardware_klasse(p=None):
+    """high | medium | small | cpu. Basis: VRAM, korrigiert um bekannte Karten."""
+    p = p or profil()
+    vram = p.get("vram_gb", 0) or 0
+    if vram >= 11:
+        klasse = "high"
+    elif vram >= 7:
+        klasse = "medium"
+    elif vram >= 4:
+        klasse = "small"
+    else:
+        klasse = "cpu"
+    namen = " ".join(g.get("name", "") for g in p.get("gpu", [])).lower()
+    for fragment, korr in _KARTEN_KORREKTUR:
+        if fragment in namen:
+            rang = {"cpu": 0, "small": 1, "medium": 2, "high": 3}
+            if rang[korr] < rang[klasse]:
+                klasse = korr  # nur ABwärts korrigieren, nie aufwärts schummeln
+            break
+    return klasse
+
+
+KLASSEN_EMPFEHLUNG = {
+    "high": {"max_modell_gb": 21.0, "ctx": 16384, "ctx_max": 32768,
+             "chat_tokens": 500, "keep_alive": "30m",
+             "beschreibung": "Starkes Coding-Modell (bis ~20 GB), großer Kontext."},
+    "medium": {"max_modell_gb": 10.0, "ctx": 8192, "ctx_max": 16384,
+               "chat_tokens": 400, "keep_alive": "20m",
+               "beschreibung": "7–14B quantisiert, mittlerer Kontext."},
+    "small": {"max_modell_gb": 5.5, "ctx": 4096, "ctx_max": 8192,
+              "chat_tokens": 300, "keep_alive": "15m",
+              "beschreibung": "7B quantisiert, kleiner Kontext."},
+    "cpu": {"max_modell_gb": 5.5, "ctx": 4096, "ctx_max": 4096,
+            "chat_tokens": 250, "keep_alive": "10m",
+            "beschreibung": "Kleines Modell auf CPU, sehr kleiner Kontext."},
+}
+
+
+def empfehlung(p=None):
+    """Gibt {klasse, max_modell_gb, ctx, ctx_max, chat_tokens, keep_alive, beschreibung}.
+    Reine Messung + Tabelle, kein Raten."""
+    p = p or profil()
+    klasse = hardware_klasse(p)
+    erg = dict(KLASSEN_EMPFEHLUNG[klasse])
+    erg["klasse"] = klasse
+    # Viel RAM hebt den ctx-Deckel etwas (KV-Cache liegt teils in RAM)
+    if (p.get("ram_total_gb", 0) or 0) >= 48 and erg["ctx_max"] < 32768:
+        erg["ctx_max"] = min(32768, erg["ctx_max"] * 2)
+    return erg
+
+
 def profil_text(p=None):
     """Lesbarer Block für /status und Startbanner. Nur echte Messwerte."""
     p = p or profil()

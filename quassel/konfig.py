@@ -14,6 +14,7 @@ DEFAULTS = {
     "hardware": {"auto_detect": True},
     "modelle": {
         "auto_select": True,
+        "max_modell_gb": None,  # None = aus Hardware-Profil (empfehlung)
         "rollen": {
             "fast": ["llama3.1:latest", "llama3.1"],
             "coding": ["quassel-ki:latest", "quassel-ki"],
@@ -23,7 +24,10 @@ DEFAULTS = {
         },
     },
     "memory": {"enabled": True, "retrieval": True, "limit_fakten": 8},
-    "context": {"adaptive": True, "verlauf_limit": 10},
+    "context": {"adaptive": True, "verlauf_limit": 10,
+                "budgets": {"TRIVIAL": 4096, "LOW": 4096, "MEDIUM": 8192, "HIGH": 16384, "MAX": 32768}},
+    "chat": {"tokens": 400},
+    "ollama": {"keep_alive": "30m", "num_ctx": 8192},
     "agent": {"enabled": True, "max_runden": 8, "self_check": True},
     "projekte": {"scan_pfade": [], "tiefe": 2, "min_confidence": 0.8, "max_risk": "MEDIUM"},
     "safety": {"confirmations": True},

@@ -252,7 +252,7 @@ def ollama_server_ok(timeout=3):
 def ollama_stream(messages, out_q, fertig, modell=None, num_ctx=None):
     """Fragt das Modell im Stream. Tokens -> out_q (str), am Ende fertig.set(). Fehler -> out_q.put('[FEHLER]...')."""
     try:
-        budget = int(os.environ.get("QUASSEL_CHAT_TOKENS", "400"))  # Chat kurz+flott, Schmiede nutzt vollen Default
+        budget = int(globals().get("CHAT_TOKENS", os.environ.get("QUASSEL_CHAT_TOKENS", "400")))  # Chat kurz+flott, Schmiede nutzt vollen Default
         opts = {"num_predict": budget, "num_ctx": int(num_ctx or NUM_CTX)}
         if NUM_GPU: opts["num_gpu"] = NUM_GPU
         payload = {"model": modell or OLLAMA_MODEL, "messages": messages, "stream": True,
@@ -367,6 +367,19 @@ try:
     QCFG = KONF.laden(str(WORKSPACE / "quassel-ki" / "quassel.yaml")) if _HAT_QUASSEL_PAKET else {}
 except Exception:
     QCFG = {}
+# v20-Phase2: yaml-Werte gelten, Env überschreibt (QUASSEL_* hat Vorrang wenn gesetzt)
+CHAT_TOKENS = 400
+try:
+    _ocfg, _ccfg = (QCFG.get("ollama", {}) or {}), (QCFG.get("chat", {}) or {})
+    if "QUASSEL_KEEP_ALIVE" not in os.environ and _ocfg.get("keep_alive"):
+        KEEP_ALIVE = str(_ocfg["keep_alive"])
+    if "QUASSEL_NUM_CTX" not in os.environ and _ocfg.get("num_ctx"):
+        NUM_CTX = int(_ocfg["num_ctx"])
+    if "QUASSEL_CHAT_TOKENS" not in os.environ and _ccfg.get("tokens"):
+        CHAT_TOKENS = int(_ccfg["tokens"])
+    else:
+        CHAT_TOKENS = int(os.environ.get("QUASSEL_CHAT_TOKENS", CHAT_TOKENS))
+except Exception: pass
 MEMORY2_PFAD = WORKSPACE / "quassel-ki" / "memory2.json"
 SELF_CHECK_SCHEMA = {"type": "object", "properties": {
     "verstanden": {"type": "boolean"}, "etwas_erfunden": {"type": "boolean"},
@@ -1250,6 +1263,8 @@ class QuasselKI:
         self.speed_var = tk.StringVar(value=str((QCFG.get("speed", {}) or {}).get("modus", "SMART")).upper())
         self.hw_profil = None  # v18: Hardware-Profil (Hintergrund beim Start)
         self.installierte_modelle = []
+        self.modell_groessen = {}
+        self.hw_empfehlung = {}
         try:
             threading.Thread(target=self._hw_start, daemon=True).start()
         except Exception: pass
@@ -2039,7 +2054,9 @@ class QuasselKI:
                     and self.installierte_modelle:
                 proto = ROUTER.entscheidungs_protokoll(frage, self.speed_var.get())
                 rollen = ((QCFG.get("modelle", {}) or {}).get("rollen", {}) or None)
-                modell = ROUTER.waehle_modell(proto["rolle"], self.installierte_modelle or None, rollen)
+                # v20-Phase2: Kapazitätsschutz – zu große Modelle werden nie gewählt
+                modell = ROUTER.waehle_modell(proto["rolle"], self.installierte_modelle or None,
+                                              rollen, self._max_gb(), getattr(self, "modell_groessen", None))
                 if modell: return modell, proto
         except Exception: pass
         return None, {"schwere": "?", "warum": "Fallback", "rolle": "?", "speed": self.speed_var.get()}
@@ -2093,11 +2110,20 @@ class QuasselKI:
                     quelle="agent-feedback", vertrauen=0.6 if conf == "HIGH" else 0.5)
         except Exception: pass
 
+    def _max_gb(self):
+        """Kapazitätsdeckel: yaml gewinnt, sonst Hardware-Profil."""
+        try:
+            m = (QCFG.get("modelle", {}) or {}).get("max_modell_gb")
+            if m: return float(m)
+            return float((getattr(self, "hw_empfehlung", {}) or {}).get("max_modell_gb", 0) or 0) or None
+        except Exception:
+            return None
     def _schnell_modell(self):
         try:
             if _HAT_QUASSEL_PAKET:
                 rollen = ((QCFG.get("modelle", {}) or {}).get("rollen", {}) or None)
-                m = ROUTER.waehle_modell("fast", self.installierte_modelle or None, rollen)
+                m = ROUTER.waehle_modell("fast", self.installierte_modelle or None, rollen,
+                                         self._max_gb(), getattr(self, "modell_groessen", None))
                 if m: return m
         except Exception: pass
         return FAST_MODEL
@@ -2204,11 +2230,25 @@ class QuasselKI:
             if _HAT_QUASSEL_PAKET and (QCFG.get("hardware", {}) or {}).get("auto_detect", True):
                 self.hw_profil = HW.profil()
                 self.installierte_modelle = [m["name"] for m in self.hw_profil.get("modelle_installiert", [])]
+                self.modell_groessen = {m["name"].lower(): m.get("gb", 0) for m in self.hw_profil.get("modelle_installiert", [])}
+                self.hw_empfehlung = HW.empfehlung(self.hw_profil)
+                self._ui(lambda: self.log("sys", "⚙️ " + self._hw_banner()))
         except Exception: pass
         try:
             if _HAT_QUASSEL_PAKET and (QCFG.get("memory", {}) or {}).get("enabled", True):
                 MEM2.migrieren(str(MEMORY_PFAD), str(MEMORY2_PFAD))
         except Exception: pass
+    def _hw_banner(self):
+        """Verständliche Start-Konfiguration (Phase 2, Punkt 10). Nur echte Werte."""
+        try:
+            e, p = self.hw_empfehlung, self.hw_profil
+            gpus = ", ".join(g.get("name", "?") for g in p.get("gpu", [])) or "keine GPU"
+            modelle = ", ".join(self.installierte_modelle[:5]) or "keine"
+            return (f"Hardware: {gpus} ({p.get('vram_gb', '?')} GB VRAM), {p.get('ram_total_gb', '?')} GB RAM. "
+                f"Klasse {e.get('klasse', '?').upper()}: {e.get('beschreibung', '')} "
+                f"Modelle: {modelle}. Keep-Alive {KEEP_ALIVE}, Chat-Tokens {CHAT_TOKENS}.")
+        except Exception:
+            return "Hardware-Check unvollständig."
     def _ctx_kuerzen(self):
         """v17: nicht hart abschneiden -> ältere Züge wandern in die Zusammenfassung."""
         try:
@@ -2471,7 +2511,7 @@ class QuasselKI:
             a_modell, a_proto = self._router_modell(aufgabe)
             if not a_modell:
                 rollen = ((QCFG.get("modelle", {}) or {}).get("rollen", {}) or None)
-                a_modell = ROUTER.waehle_modell("coding", self.installierte_modelle or None, rollen) if _HAT_QUASSEL_PAKET else None
+                a_modell = ROUTER.waehle_modell("coding", self.installierte_modelle or None, rollen, self._max_gb(), getattr(self, "modell_groessen", None)) if _HAT_QUASSEL_PAKET else None
             if a_modell:
                 self._ui(lambda m=a_modell: self.log("sys", f"🧭 Agent-Modell: {m}"))
         except Exception:
@@ -2635,7 +2675,7 @@ class QuasselKI:
         self._letztes_modell = (modell, kurz)
         try:  # v18: adaptives Context-Budget aus Schwere + RAM statt fix 8192
             ram = (self.hw_profil or {}).get("ram_total_gb", 16) if self.hw_profil else 16
-            self._letztes_ctx_budget = ROUTER.context_budget(proto.get("schwere", "MEDIUM"), ram, 19, self.speed_var.get()) if _HAT_QUASSEL_PAKET else NUM_CTX
+            self._letztes_ctx_budget = ROUTER.context_budget(proto.get("schwere", "MEDIUM"), ram, 19, self.speed_var.get(), ((QCFG.get("context", {}) or {}).get("budgets") if (QCFG.get("context", {}) or {}).get("adaptive", True) else {"TRIVIAL": NUM_CTX, "LOW": NUM_CTX, "MEDIUM": NUM_CTX, "HIGH": NUM_CTX, "MAX": NUM_CTX})) if _HAT_QUASSEL_PAKET else NUM_CTX
         except Exception:
             self._letztes_ctx_budget = NUM_CTX
         z = datetime.now().strftime("%H:%M:%S")

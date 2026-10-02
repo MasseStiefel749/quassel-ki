@@ -49,18 +49,40 @@ def _norm(name):
     return n.split(":")[0] if ":" in n else n
 
 
-def waehle_modell(rolle, installiert, rollen_konfig=None):
-    """Bestes installiertes Modell für Rolle. Fallback-Kette, nie None wenn irgendwas da ist."""
+def waehle_modell(rolle, installiert, rollen_konfig=None, max_gb=None, groessen=None):
+    """Bestes installiertes Modell für Rolle. max_gb sperrt zu große Modelle
+    (Kapazitätsschutz: die App lädt nie, was nicht passt). Fallback-Kette, nie
+    None wenn irgendwas Passendes da ist."""
     tabelle = rollen_konfig or STANDARD_ROLLEN
     inst = {_norm(n) for n in (installiert or [])}
     inst_voll = {(n or "").lower() for n in (installiert or [])}
+    groessen = groessen or {}
+
+    def passt(kandidat):
+        if max_gb is None:
+            return True
+        try:
+            gb = groessen.get(kandidat.lower(), groessen.get(_norm(kandidat)))
+            return gb is None or float(gb) <= float(max_gb)
+        except Exception:
+            return True  # unbekannte Größe blockiert nicht (Ollama meldet echten Fehler)
+
+    def aufgeloest(kandidat):
+        if kandidat.lower() in inst_voll:
+            return kandidat
+        hit = next((n for n in (installiert or []) if _norm(n) == _norm(kandidat)), None)
+        return hit
+
     for kandidat in tabelle.get(rolle, []):
-        if kandidat.lower() in inst_voll or _norm(kandidat) in inst:
-            return kandidat if kandidat.lower() in inst_voll else next(
-                (n for n in (installiert or []) if _norm(n) == _norm(kandidat)), kandidat)
+        echt = aufgeloest(kandidat)
+        if echt and passt(echt):
+            return echt
     if rolle != "fallback":
-        return waehle_modell("fallback", installiert, tabelle)
-    return (installiert or [None])[0]
+        return waehle_modell("fallback", installiert, tabelle, max_gb, groessen)
+    for n in (installiert or []):
+        if passt(n):
+            return n
+    return None
 
 
 def speed_rolle(schwere_stufe, braucht_vision, braucht_code, speed_mode="SMART"):
@@ -84,17 +106,20 @@ def speed_rolle(schwere_stufe, braucht_vision, braucht_code, speed_mode="SMART")
     return "reasoning" if schwere_stufe == "MAX" else "coding"
 
 
-def context_budget(schwere_stufe, ram_gb=16, modell_gb=19, speed_mode="SMART"):
-    """Adaptives Kontext-Budget. Deckel: RAM (KV-Cache) + Modellgröße. Nie über 32k ohne Nachweis."""
-    basis = {"TRIVIAL": 4096, "LOW": 4096, "MEDIUM": 8192, "HIGH": 16384, "MAX": 32768}
-    budget = basis.get(schwere_stufe, 8192)
+def context_budget(schwere_stufe, ram_gb=16, modell_gb=19, speed_mode="SMART", budgets=None):
+    """Adaptives Kontext-Budget. Deckel: RAM (KV-Cache) + Modellgröße. Nie über 32k ohne Nachweis.
+    budgets überschreibt die Stufen aus quassel.yaml (context.budgets)."""
+    basis = dict(budgets) if budgets else {}
+    for k, v in {"TRIVIAL": 4096, "LOW": 4096, "MEDIUM": 8192, "HIGH": 16384, "MAX": 32768}.items():
+        basis.setdefault(k, v)
+    budget = int(basis.get(schwere_stufe, 8192))
     if (ram_gb or 16) < 12 and budget > 8192:
         budget = 8192  # wenig RAM -> KV-Cache-Deckel
     if (modell_gb or 19) > 20 and budget > 16384:
         budget = 16384  # Riesenmodell + Riesenctx = Swap-Tod
     if (speed_mode or "SMART").upper() == "FAST" and budget > 8192:
         budget = 8192
-    return budget
+    return max(1024, min(budget, 32768))
 
 
 def braucht_vision_check(text):
