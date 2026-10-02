@@ -24,6 +24,6 @@ try {
 $calls = Get-Process -Name "ms-teams" -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -match "Anruf|Call|Besprechung|Meeting" }
 if ($calls -and -not $env:QUASSEL_VOICE) { $env:QUASSEL_VOICE = "0"; Write-Host "Teams-Call erkannt -> Stimme aus." }
 
-Write-Host "Starte quassel_ki_v17.py ..."
-Start-Process python "quassel_ki_v17.py" -WorkingDirectory $QDir
+Write-Host "Starte quassel_ki_v18.py ..."
+Start-Process python "quassel_ki_v18.py" -WorkingDirectory $QDir
 Write-Host "Läuft. Fenster kann zu."

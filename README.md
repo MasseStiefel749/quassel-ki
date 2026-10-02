@@ -2,14 +2,14 @@
 
 Lokaler **AI Game Development Assistant** für Unreal Engine (UE 5.8) – läuft komplett offline auf dem eigenen PC, kein Cloud-Abo, keine Daten gehen raus.
 
-**Stand: v17** – Ask/Agent-Modi, Live-PC-Steuerung, Stimme, 10 Skills, Forge-Workflow (Idee → GDD → Unreal-Gerüst → Tasks → Git → Doku), Rolling-Summary-Gedächtnis, Auto-Memory.
+**Stand: v18 Foundation** – Brain-Router (Difficulty → Rolle → Modell), Hardware-Profil beim Start, Speed-Modes, adaptives Context-Budget, Memory 2.0 (Typen/Quellen/Confidence), Agent Self-Check + Lesson-Loop, `quassel.yaml`-Konfig, echter Benchmark. Details: `docs/`.
 
 ## Start
 
 ```powershell
 .\start.ps1            # prüft Ollama + Modell, startet die App
 # oder von Hand:
-python quassel_ki_v17.py
+python quassel_ki_v18.py
 ```
 
 Voraussetzungen: Python 3.12, [Ollama](https://ollama.com/download), Modelle (siehe unten).
@@ -36,6 +36,7 @@ Limit: max ~20 GB Modell-Speicher.
 | Befehl | Was |
 |---|---|
 | `/mode ask` / `/mode agent` | Nur reden / arbeiten mit Werkzeugen |
+| `/speed FAST\|BALANCED\|SMART\|MAXIMUM` | Tempo vs. Gründlichkeit (v18) |
 | `/schmiede Idee…` | Spielidee → GDD.md + tasks.md + klassen.md |
 | `/geruest Spielname` | Echtes `.uproject` + Source + Config |
 | `/tasks` `/logcheck` `/impact Klasse` | Fortschritt, Log-Fehler, Abhängigkeiten |
@@ -63,8 +64,13 @@ Limit: max ~20 GB Modell-Speicher.
 ## Struktur
 
 ```
-quassel_ki_v17.py      # die App (aktuell)
-archiv/                # v1–v16 (Entwicklungsgeschichte)
+quassel_ki_v18.py      # die App (aktuell)
+quassel/               # v18-Module: hardware, modelle, memory2, konfig
+quassel.yaml           # Konfiguration (Rollen, Speed, Memory, Agent)
+quassel_benchmark.py   # echte Messwerte (logs/benchmark_*.json)
+tests/test_v18.py      # 17 Modul-Tests (headless)
+docs/                  # Architektur, Modell-Strategie, Memory, Roadmap
+archiv/                # v1–v17 (Entwicklungsgeschichte)
 ollama-model/Modelfile # Persönlichkeit + Wissen
 skills/                # 10 Experten-Skills (JSON)
 plugins/               # eigene Werkzeuge (Python)
