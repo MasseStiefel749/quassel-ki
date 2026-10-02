@@ -1,0 +1,81 @@
+[12:09:30] ❯ Quassel-KI:
+System-Check fertig! Profil: MEDIUM-HIGH | CPU-Kerne: 20 | RAM: 63.7GB | GPU: NVIDIA RTX A1000 6GB Laptop GPU, 6144 MiB | Frei C:: 18.8GB | Unreal: ['5.8']. Dein PC: i7-13700H + 64GB RAM = top fuer Compiles. Aber RTX A1000 6GB + nur 19GB frei auf C: -> Unreal auf Mittel stellen: Lumen auf Medium, Nanite ok, keine 4K-Lightmaps, regelmaessig DerivedDataCache leeren. ! Platte knapp! Mach Platz, Unreal-Projekte fressen 20-50GB. Live-Modell 'quassel-ki': bereit, ich antworte live und lese ALLES vor. Du kannst mit mir über ALLES reden – nicht nur Unreal. v11: Ansichten (💬/🤖/🔧 oben), Live-Agent mit Bildschirm+Maus (Tab 🤖), Sessions mit Autosave, @Datei erwähnen, /permit /status /review, quassel.md-Projektregeln. /help für Befehle.
+
+[12:09:57] ❯ Quassel-KI:
+Mir ist langweilig – soll ich Projekte suchen? Schreib 'Projekte finden'.
+
+[12:10:04] ❯ sys:
+Modus: ❓ ASK (nur reden)
+
+[12:10:09] ❯ Quassel-KI:
+Mir ist langweilig – soll ich Projekte suchen? Schreib 'Projekte finden'.
+
+[12:10:21] ❯ Quassel-KI:
+Mir ist langweilig – soll ich Projekte suchen? Schreib 'Projekte finden'.
+
+[12:10:33] ❯ Quassel-KI:
+Unreal-Tipp: Enhanced Input ab UE 5.1 – altes Input Mapping ist deprecated.
+
+[12:10:45] ❯ Quassel-KI:
+Unreal-Tipp: Enhanced Input ab UE 5.1 – altes Input Mapping ist deprecated.
+
+[12:10:57] ❯ Quassel-KI:
+Coding-Tipp: Smart Pointer statt new/delete. In Unreal: UPROPERTY damit GC dich kennt.
+
+[12:11:09] ❯ Quassel-KI:
+Unreal-Tipp: BeginPlay für Setup, Tick nur wenn nötig – Tick frisst Performance!
+
+[12:11:21] ❯ Quassel-KI:
+Ey, noch da? Frag mich was zu Unreal!
+
+[12:11:33] ❯ Quassel-KI:
+Mir ist langweilig – soll ich Projekte suchen? Schreib 'Projekte finden'.
+
+[12:11:45] ❯ Quassel-KI:
+Ey, noch da? Frag mich was zu Unreal!
+
+[12:11:57] ❯ Quassel-KI:
+Coding-Tipp: Kleine Funktionen, max 30 Zeilen, ein Job pro Funktion.
+
+[12:12:09] ❯ Quassel-KI:
+Ey, noch da? Frag mich was zu Unreal!
+
+[12:12:21] ❯ Quassel-KI:
+Coding-Tipp: UE_LOG(LogTemp, Warning, TEXT("x=%f"), X) statt raten.
+
+[12:12:33] ❯ Quassel-KI:
+Coding-Tipp: Smart Pointer statt new/delete. In Unreal: UPROPERTY damit GC dich kennt.
+
+[12:12:45] ❯ Quassel-KI:
+Unreal-Tipp: BeginPlay für Setup, Tick nur wenn nötig – Tick frisst Performance!
+
+[12:12:57] ❯ Quassel-KI:
+Coding-Tipp: Smart Pointer statt new/delete. In Unreal: UPROPERTY damit GC dich kennt.
+
+[12:13:09] ❯ Quassel-KI:
+Unreal-Tipp: BeginPlay für Setup, Tick nur wenn nötig – Tick frisst Performance!
+
+[12:13:21] ❯ Quassel-KI:
+Coding-Tipp: UE_LOG(LogTemp, Warning, TEXT("x=%f"), X) statt raten.
+
+[12:13:33] ❯ Quassel-KI:
+Mir ist langweilig – soll ich Projekte suchen? Schreib 'Projekte finden'.
+
+[12:13:45] ❯ Quassel-KI:
+Ey, noch da? Frag mich was zu Unreal!
+
+[12:13:57] ❯ Quassel-KI:
+Coding-Tipp: Kleine Funktionen, max 30 Zeilen, ein Job pro Funktion.
+
+[12:14:10] ❯ Quassel-KI:
+Unreal-Tipp: Replication: nie Tick replizieren, nur Änderungen. Sonst Lag.
+
+[12:14:22] ❯ Quassel-KI:
+Coding-Tipp: UE_LOG(LogTemp, Warning, TEXT("x=%f"), X) statt raten.
+
+[12:14:34] ❯ Quassel-KI:
+Coding-Tipp: Smart Pointer statt new/delete. In Unreal: UPROPERTY damit GC dich kennt.
+
+[12:14:46] ❯ Quassel-KI:
+Mir ist langweilig – soll ich Projekte suchen? Schreib 'Projekte finden'.
+

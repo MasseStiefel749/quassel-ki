@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Logs (ändern sich ständig)
+*.log
+
+# Temporäres
+*.tmp
+*.bak
+*~
+.DS_Store
+Thumbs.db
+
+# Ollama-Modellbau-Artefakt für den 4070-PC wird lokal erzeugt
+ollama-model/Modelfile.4070

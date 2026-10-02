@@ -1,0 +1,13 @@
+{
+  "servers": {
+    "dateien-lokal (Beispiel, aus)": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "C:\\Users\\S-Lasarzewski\\Documents\\Default Project"
+      ],
+      "enabled": false
+    }
+  }
+}

@@ -1,0 +1,1187 @@
+#!/usr/bin/env python3
+"""
+Quassel-KI v7 - Richtung GPT: Anhänge + Gedächtnis + Projekt-Index + Code ausführen.
+- 📎 Dateien anhängen (Code/Bilder als Text) -> landen im Kontext
+- 🧠 Gedächtnis: 'merk dir ...' speichert Fakten (memory.json), immer im Kontext
+- 📇 Projekt-Index: Unreal-Source scannen, relevante Dateien schnell finden
+- ▶ Code ausführen: Python im Projektordner laufen lassen (mit Nachfrage)
+- Modell-Upgrade (schlaueres Coder-Modell) passiert auf dem 4070-PC per setup_4070.ps1
+
+Start: python quassel_ki_v7.py
+"""
+import tkinter as tk
+from tkinter import scrolledtext, messagebox, simpledialog, filedialog
+import random, time, threading, queue, re, os, json, shutil, subprocess, sys
+import urllib.request, asyncio, tempfile, base64
+from datetime import datetime
+from pathlib import Path
+
+WORKSPACE = Path(r"C:\Users\S-Lasarzewski\Documents\Default Project")
+ALLOWED_ROOTS = [
+    WORKSPACE,
+    Path.home() / "Documents" / "Unreal Projects",
+    Path.home() / "Documents" / "Default Project",
+    Path(os.environ.get("TEMP", r"C:\Temp")),
+]
+# ---------- Stimme v6: Neural (Edge) + Windows-Fallback ----------
+try:
+    import pyttsx3
+    TTS_AVAILABLE = True
+except ImportError:
+    TTS_AVAILABLE = False
+try:
+    import edge_tts as _edge_tts
+    EDGE_OK = True
+except ImportError:
+    EDGE_OK = False
+try:
+    import pygame as _pygame
+    PYGAME_OK = True
+except ImportError:
+    PYGAME_OK = False
+
+STIMMEN = {
+    "Katja (weiblich, neural)": "de-DE-KatjaNeural",
+    "Conrad (männlich, neural)": "de-DE-ConradNeural",
+    "Seraphina (weiblich, neural)": "de-DE-SeraphinaMultilingualNeural",
+    "Florian (männlich, neural)": "de-DE-FlorianMultilingualNeural",
+    "Windows (offline)": "windows",
+}
+
+class Sprecher:
+    """Gescheite Stimme: Edge-Neural wenn möglich, sonst Windows-Offline. Liest ALLES vor."""
+    CHUNK = 220
+    def __init__(self):
+        self.q = queue.Queue(); self.aktiv = True; self.enabled = True; self.rate = 175
+        self.stimme = "de-DE-KatjaNeural"
+        self.backend = "edge" if (EDGE_OK and PYGAME_OK) else "windows"
+        self.engine = None
+        self._mixer_ok = False
+        threading.Thread(target=self._loop, daemon=True).start()
+    def _edge_sagen(self, text):
+        async def _run():
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3"); tmp.close()
+            tempo = "+0%" if self.rate == 175 else (f"+{int((self.rate-175)/1.75)}%" if self.rate > 175 else f"{int((self.rate-175)/1.75)}%")
+            await _edge_tts.Communicate(text, self.stimme, rate=tempo).save(tmp.name)
+            return tmp.name
+        return asyncio.run(_run())
+    def _loop(self):
+        if PYGAME_OK:
+            try: _pygame.mixer.init(); self._mixer_ok = True
+            except Exception as e: print("Mixer:", e)
+        if TTS_AVAILABLE:
+            try:
+                self.engine = pyttsx3.init()
+                try:
+                    for v in self.engine.getProperty('voices'):
+                        n = (v.name + v.id).lower()
+                        if 'hedda' in n or 'de-de' in n or 'german' in n or 'deutsch' in n:
+                            self.engine.setProperty('voice', v.id); break
+                except Exception: pass
+            except Exception as e: print("TTS init:", e)
+        engine = self.engine
+        while self.aktiv:
+            try: text = self.q.get(timeout=0.5)
+            except queue.Empty: continue
+            if not self.enabled or not text: continue
+            gesprochen = False
+            if self.backend == "edge" and EDGE_OK and self._mixer_ok and self.stimme != "windows":
+                try:
+                    datei = self._edge_sagen(text)
+                    try:
+                        _pygame.mixer.music.load(datei); _pygame.mixer.music.play()
+                        while _pygame.mixer.music.get_busy() and self.aktiv and self.enabled:
+                            time.sleep(0.1)
+                    finally:
+                        try: os.unlink(datei)
+                        except Exception: pass
+                    gesprochen = True
+                except Exception as e:
+                    print("Edge-TTS fallback (z.B. offline):", e)
+            if not gesprochen and engine is not None:
+                try:
+                    engine.setProperty('rate', self.rate)
+                    clean = re.sub(r'[^\w\säöüÄÖÜß.,!?\-:;() ]', '', text)
+                    engine.say(clean); engine.runAndWait()
+                except Exception as e: print("TTS:", e)
+    def sprich(self, t):
+        """Alles vorlesen: Text in Stücke teilen und komplett einreihen."""
+        if not self.enabled or not t: return
+        if not (EDGE_OK or TTS_AVAILABLE): return
+        clean = str(t).strip()
+        if not clean: return
+        Teile, cur = [], ""
+        for satz in re.split(r'(?<=[.!?])\s+', clean):
+            if len(cur) + len(satz) + 1 <= self.CHUNK:
+                cur = (cur + " " + satz).strip()
+            else:
+                if cur: Teile.append(cur)
+                while len(satz) > self.CHUNK:
+                    Teile.append(satz[:self.CHUNK]); satz = satz[self.CHUNK:]
+                cur = satz
+        if cur: Teile.append(cur)
+        for teil in Teile:
+            if self.q.qsize() > 30:
+                try: self.q.get_nowait()
+                except queue.Empty: pass
+            self.q.put(teil)
+    def halt(self):
+        """Sofort still sein: Warteschlange leeren + laufende Ansage stoppen."""
+        while not self.q.empty():
+            try: self.q.get_nowait()
+            except queue.Empty: break
+        try:
+            if self._mixer_ok: _pygame.mixer.music.stop()
+        except Exception: pass
+        try:
+            if self.engine: self.engine.stop()
+        except Exception: pass
+    def stop(self): self.aktiv = False
+
+# ---------- Computer: sehen (Screenshot + Vision) + Maus ----------
+try:
+    from PIL import ImageGrab
+    PIL_OK = True
+except ImportError:
+    PIL_OK = False
+try:
+    import pyautogui as _pag
+    _pag.FAILSAFE = True; _pag.PAUSE = 0.15
+    PYAUTO_OK = True
+except ImportError:
+    PYAUTO_OK = False
+
+SHOTS = WORKSPACE / "quassel-ki" / "shots"
+try: SHOTS.mkdir(parents=True, exist_ok=True)
+except Exception: pass
+VISION_MODEL = os.environ.get("QUASSEL_VISION", "moondream")
+
+def screenshot_machen(maxbreite=1280):
+    if not PIL_OK: return None, "Pillow fehlt: pip install pillow"
+    try:
+        img = ImageGrab.grab()
+        img.thumbnail((maxbreite, maxbreite))
+        pf = SHOTS / f"shot_{datetime.now():%Y%m%d_%H%M%S}.png"
+        img.save(pf)
+        return pf, None
+    except Exception as e:
+        return None, str(e)
+
+def bild_sehen(frage, bildpfad, timeout=180):
+    data = base64.b64encode(Path(bildpfad).read_bytes()).decode()
+    payload = json.dumps({"model": VISION_MODEL, "prompt": frage, "stream": False, "images": [data]}).encode()
+    req = urllib.request.Request("http://127.0.0.1:11434/api/generate", data=payload,
+                                 headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.loads(r.read().decode()).get("response", "(leer)")
+
+# ---------- GPT-Features: Memory, Anhänge, Projekt-Index ----------
+MEMORY_PFAD = WORKSPACE / "quassel-ki" / "memory.json"
+INDEX_PFAD = WORKSPACE / "quassel-ki" / "projekt_index.json"
+
+def memory_laden():
+    try:
+        if MEMORY_PFAD.exists():
+            return json.loads(MEMORY_PFAD.read_text(encoding="utf-8"))
+    except Exception: pass
+    return {"fakten": []}
+
+def memory_hinzu(fakt):
+    mem = memory_laden()
+    fakt = str(fakt).strip()[:300]
+    if fakt and fakt not in mem["fakten"]:
+        mem["fakten"].append(fakt)
+        mem["fakten"] = mem["fakten"][-40:]
+        MEMORY_PFAD.write_text(json.dumps(mem, ensure_ascii=False, indent=2), encoding="utf-8")
+    return mem
+
+def memory_text():
+    fakten = memory_laden().get("fakten", [])
+    return "" if not fakten else "Gemerkte Fakten über Nutzer/Projekte:\n- " + "\n- ".join(fakten)
+
+def datei_text_lesen(pfad, limit=12000):
+    p = Path(str(pfad))
+    if p.stat().st_size > 200000: return None, "Datei zu groß (>200KB)."
+    try: return p.read_text(encoding="utf-8", errors="replace")[:limit], None
+    except Exception as e: return None, str(e)
+
+def projekt_index_bauen(ordner, max_dateien=400):
+    exts = {".h", ".cpp", ".cs", ".ini", ".uproject", ".py", ".json"}
+    treffer = []
+    for f in Path(ordner).rglob("*"):
+        if len(treffer) >= max_dateien: break
+        try:
+            if f.is_file() and f.suffix.lower() in exts and "Intermediate" not in str(f) and "Saved" not in str(f):
+                treffer.append({"pfad": str(f), "bytes": f.stat().st_size})
+        except Exception: continue
+    INDEX_PFAD.write_text(json.dumps({"ordner": str(ordner), "dateien": treffer}, ensure_ascii=False, indent=2), encoding="utf-8")
+    return treffer
+
+# ---------- Ollama Live-Chat ----------
+OLLAMA_URL = "http://127.0.0.1:11434/api/chat"
+OLLAMA_MODEL = os.environ.get("QUASSEL_MODEL", "quassel-ki")
+
+def ollama_server_ok(timeout=3):
+    try:
+        req = urllib.request.Request("http://127.0.0.1:11434/api/tags")
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return r.status == 200
+    except Exception:
+        return False
+
+def ollama_stream(messages, out_q, fertig):
+    """Fragt das Modell im Stream. Tokens -> out_q (str), am Ende fertig.set(). Fehler -> out_q.put('[FEHLER]...')."""
+    try:
+        data = json.dumps({"model": OLLAMA_MODEL, "messages": messages, "stream": True}).encode()
+        req = urllib.request.Request(OLLAMA_URL, data=data, headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=300) as r:
+            for raw in r:
+                if not raw.strip(): continue
+                try: obj = json.loads(raw.decode())
+                except Exception: continue
+                if "error" in obj:
+                    out_q.put(f"\n[Modell-Fehler: {obj['error']}]"); break
+                tok = obj.get("message", {}).get("content", "")
+                if tok: out_q.put(tok)
+                if obj.get("done"): break
+    except Exception as e:
+        out_q.put(f"\n[Verbindung zu Ollama fehlgeschlagen: {e} -> Offline-Modus]")
+    finally:
+        fertig.set()
+
+# ---------- MCP-Werkzeuge (Model Context Protocol, minimal) ----------
+# Eigene Tools laufen immer (ohne Server). Externe MCP-Server (stdio, z.B. per npx)
+# können in mcp_config.json eingetragen werden. Jeder Schreib-/Server-Aufruf fragt nach.
+MCP_CONFIG = WORKSPACE / "quassel-ki" / "mcp_config.json"
+MCP_DEFAULT = {"servers": {"dateien-lokal (Beispiel, aus)": {
+    "command": "npx", "args": ["-y", "@modelcontextprotocol/server-filesystem", str(WORKSPACE)],
+    "enabled": False}}}
+
+class MCPClient:
+    def __init__(self, log_fn):
+        self.log_fn = log_fn
+        self.procs = {}   # name -> Popen
+        self.ids = {}
+        self.tools_cache = {}
+    def config_laden(self):
+        try:
+            if not MCP_CONFIG.exists():
+                MCP_CONFIG.write_text(json.dumps(MCP_DEFAULT, indent=2), encoding="utf-8")
+            return json.loads(MCP_CONFIG.read_text(encoding="utf-8"))
+        except Exception as e:
+            self.log_fn("Quassel-KI", f"MCP-Config Fehler: {e}")
+            return {"servers": {}}
+    def _send(self, name, methode, params=None, timeout=15):
+        p = self.procs.get(name)
+        if not p or p.poll() is not None: return {"_fehler": "Server läuft nicht"}
+        self.ids[name] = self.ids.get(name, 0) + 1
+        msg = {"jsonrpc": "2.0", "id": self.ids[name], "method": methode}
+        if params is not None: msg["params"] = params
+        try:
+            p.stdin.write((json.dumps(msg) + "\n").encode()); p.stdin.flush()
+            import select
+            out = b""
+            t0 = time.time()
+            while time.time() - t0 < timeout:
+                line = p.stdout.readline()
+                if not line: break
+                try: obj = json.loads(line.decode())
+                except Exception: continue
+                if obj.get("id") == self.ids[name]: return obj.get("result", obj)
+            return {"_fehler": "Timeout"}
+        except Exception as e:
+            return {"_fehler": str(e)}
+    def server_starten(self, name, cfg):
+        try:
+            p = subprocess.Popen([cfg["command"]] + cfg.get("args", []),
+                                 stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+            self.procs[name] = p
+            self._send(name, "initialize", {"protocolVersion": "2024-11-05",
+                      "capabilities": {}, "clientInfo": {"name": "quassel-ki", "version": "5"}})
+            try: p.stdin.write(b'{"jsonrpc":"2.0","method":"notifications/initialized"}\n'); p.stdin.flush()
+            except Exception: pass
+            res = self._send(name, "tools/list")
+            tools = res.get("tools", []) if isinstance(res, dict) else []
+            self.tools_cache[name] = [t.get("name", "?") for t in tools]
+            return True
+        except Exception as e:
+            self.log_fn("Quassel-KI", f"MCP-Server {name} startet nicht: {e}")
+            return False
+    def stoppen(self):
+        for p in self.procs.values():
+            try: p.terminate()
+            except Exception: pass
+        self.procs.clear()
+    # --- eingebaute Werkzeuge (brauchen keinen Server) ---
+    def builtin_tools(self):
+        return ["system_info", "projekt_suchen", "datei_lesen", "actor_vorschau", "tipp_ziehen",
+                "bildschirm_foto", "bildschirm_sehen", "maus_position",
+                "projekt_index", "code_ausfuehren"]
+    def alle_tools(self):
+        tools = [f"lokal/{t}" for t in self.builtin_tools()]
+        for name, tl in self.tools_cache.items():
+            tools += [f"{name}/{t}" for t in tl]
+        return tools
+    def aufrufen(self, toolname, args, ctx):
+        """ctx: dict mit pc(SafePC), sysinfo, projekt. Gibt Text zurück."""
+        if "/" in toolname: server, tname = toolname.split("/", 1)
+        else: server, tname = "lokal", toolname
+        if server == "lokal":
+            try:
+                if tname == "system_info":
+                    s = ctx["sysinfo"]
+                    return f"Profil {s['profil']}, CPU-Kerne {s['cpu']}, RAM {s['ram']}GB, GPU {s['gpu']}, C: frei {s['disk_free']}GB, UE: {list(s['editors'].keys())}"
+                if tname == "projekt_suchen":
+                    projs = ctx["pc"].finde_projekte()
+                    return "Keine .uproject gefunden." if not projs else "\n".join(str(p) for p in projs[:8])
+                if tname == "datei_lesen":
+                    pf = Path(str(args.get("pfad", "")))
+                    if not ctx["pc"]._im_erlaubten_bereich(pf): return "Pfad außerhalb der erlaubten Ordner – abgelehnt."
+                    if pf.stat().st_size > 200000: return "Datei zu groß (>200KB)."
+                    return pf.read_text(encoding="utf-8", errors="replace")[:6000]
+                if tname == "actor_vorschau":
+                    name = re.sub(r'\W', '', str(args.get("name", "MyActor"))) or "MyActor"
+                    return f"Vorschau: {name}.h/.cpp würden UCLASS-Actor mit MaxHP, BeginPlay+Tick erzeugen. Zum echten Erstellen: Button 'C++ Actor erstellen'."
+                if tname == "tipp_ziehen":
+                    return random.choice(UNREAL_TIPPS + CODING_TIPPS)
+                if tname == "bildschirm_foto":
+                    pf, err = screenshot_machen()
+                    return f"Fehler: {err}" if err else f"Screenshot: {pf} (Vorschau im Chat-Fenster möglich)"
+                if tname == "bildschirm_sehen":
+                    pf, err = screenshot_machen()
+                    if err: return f"Fehler: {err}"
+                    try:
+                        desc = bild_sehen("Describe this screenshot in detail: active windows, texts, buttons.", pf)
+                        return f"Seheindruck (englisch, lass ihn dir per 'An Modell senden' auf Deutsch erklären):\n{desc}"
+                    except Exception as e: return f"Vision-Modell ({VISION_MODEL}) nicht bereit: {e}"
+                if tname == "maus_position":
+                    if not PYAUTO_OK: return "pyautogui fehlt: pip install pyautogui"
+                    x, y = _pag.position()
+                    return f"Maus bei x={x}, y={y} (Bildschirm {_pag.size()})"
+                if tname == "projekt_index":
+                    basis = str(args.get("ordner") or (ctx.get("projekt").parent if ctx.get("projekt") else WORKSPACE))
+                    zb = Path(basis)
+                    if not zb.exists(): return f"Ordner fehlt: {basis}"
+                    treffer = projekt_index_bauen(zb)
+                    return f"Index: {len(treffer)} Dateien in {basis}.\n" + "\n".join(t['pfad'] for t in treffer[:40])
+                if tname == "code_ausfuehren":
+                    pf = Path(str(args.get("datei", "")))
+                    if pf.suffix.lower() != ".py": return "Nur .py-Dateien."
+                    if not ctx["pc"]._im_erlaubten_bereich(pf): return "Pfad außerhalb der erlaubten Ordner – abgelehnt."
+                    try:
+                        r = subprocess.run([sys.executable, str(pf)], capture_output=True, text=True, timeout=25)
+                        out = (r.stdout + r.stderr)[-4000:]
+                        return f"Exit {r.returncode}:\n{out or '(keine Ausgabe)'}"
+                    except subprocess.TimeoutExpired:
+                        return "Abgebrochen: Timeout (25s)."
+                    except Exception as e:
+                        return f"Fehler: {e}"
+                return "Unbekanntes lokales Tool."
+            except Exception as e:
+                return f"Fehler: {e}"
+        res = self._send(server, "tools/call", {"name": tname, "arguments": args})
+        try: return json.dumps(res, ensure_ascii=False)[:6000]
+        except Exception: return str(res)[:6000]
+
+# ---------- System-Check ----------
+def get_ram_gb():
+    try:
+        import ctypes
+        class MS(ctypes.Structure):
+            _fields_ = [("dwLength", ctypes.c_ulong), ("dwMemoryLoad", ctypes.c_ulong),
+                        ("ullTotalPhys", ctypes.c_ulonglong), ("ullAvailPhys", ctypes.c_ulonglong),
+                        ("ullTotalPageFile", ctypes.c_ulonglong), ("ullAvailPageFile", ctypes.c_ulonglong),
+                        ("ullTotalVirtual", ctypes.c_ulonglong), ("ullAvailVirtual", ctypes.c_ulonglong),
+                        ("ullAvailExtendedVirtual", ctypes.c_ulonglong)]
+        s = MS(); s.dwLength = ctypes.sizeof(MS)
+        ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(s))
+        return round(s.ullTotalPhys / (1024**3), 1)
+    except Exception: return 0
+
+def get_gpu():
+    try:
+        out = subprocess.check_output(["nvidia-smi", "--query-gpu=name,memory.total", "--format=csv,noheader"],
+                                      text=True, timeout=5)
+        return out.strip().split("\n")[0]
+    except Exception:
+        return "NVIDIA RTX A1000 6GB (bekannt vom Vor-Check)"
+
+def find_unreal_editors():
+    found = {}
+    for ver, p in [("5.8", r"C:\Program Files\Epic Games\UE_5.8\Engine\Binaries\Win64\UnrealEditor.exe"),
+                   ("5.6", r"C:\Program Files\Epic Games\UE_5.6\Engine\Binaries\Win64\UnrealEditor.exe")]:
+        if os.path.exists(p): found[ver] = p
+    return found
+
+def system_check():
+    cpu = os.cpu_count()
+    ram = get_ram_gb() or 63.7
+    disk_free = round(shutil.disk_usage("C:\\").free / (1024**3), 1)
+    gpu = get_gpu()
+    editors = find_unreal_editors()
+    # Profil: deine Kiste: CPU stark, RAM riesig, GPU mittel, Disk knapp
+    if ram >= 32 and cpu >= 12 and "A1000" in gpu:
+        profil = "MEDIUM-HIGH"
+        empf = ("Dein PC: i7-13700H + 64GB RAM = top fuer Compiles. "
+                "Aber RTX A1000 6GB + nur {:.0f}GB frei auf C: -> Unreal auf Mittel stellen: "
+                "Lumen auf Medium, Nanite ok, keine 4K-Lightmaps, regelmaessig DerivedDataCache leeren.").format(disk_free)
+        einstellungen = {"bock": 70, "stille": 25, "tts_an": True, "scalability": "Medium"}
+    elif ram < 16:
+        profil = "LOW"; empf = "Wenig RAM – Unreal auf Low, TTS aus, wenig Tabs."; einstellungen = {"bock": 40, "stille": 45, "tts_an": False, "scalability": "Low"}
+    else:
+        profil = "MEDIUM"; empf = "Solide Mitte – Unreal Medium."; einstellungen = {"bock": 60, "stille": 30, "tts_an": True, "scalability": "Medium"}
+    if disk_free < 50:
+        empf += " ! Platte knapp! Mach Platz, Unreal-Projekte fressen 20-50GB."
+    return {"cpu": cpu, "ram": ram, "gpu": gpu, "disk_free": disk_free,
+            "editors": editors, "profil": profil, "empfehlung": empf, "preset": einstellungen}
+
+# ---------- Sicherer PC-Zugriff ----------
+class SafePC:
+    def __init__(self, log_fn):
+        self.log_fn = log_fn
+        self.darf = False  # Checkbox in UI
+    def _im_erlaubten_bereich(self, pfad: Path):
+        try:
+            rp = pfad.resolve()
+            return any(str(rp).lower().startswith(str(r.resolve()).lower()) for r in ALLOWED_ROOTS if r.exists() or r == WORKSPACE)
+        except Exception: return False
+    def finde_projekte(self, max_treffer=10):
+        treffer = []
+        suchorte = [p for p in ALLOWED_ROOTS if p.exists()] + [Path.home() / "Documents"]
+        gesehen = set()
+        for ort in suchorte:
+            try:
+                for f in ort.rglob("*.uproject"):
+                    if str(f) in gesehen: continue
+                    gesehen.add(str(f))
+                    treffer.append(f)
+                    if len(treffer) >= max_treffer: return treffer
+            except Exception: continue
+        return treffer
+    def lese_uproject(self, pfad: Path):
+        try: return json.loads(pfad.read_text(encoding="utf-8"))
+        except Exception as e: return {"_fehler": str(e)}
+    def actor_erstellen(self, ordner: Path, classname: str):
+        """Erstellt MyActor.h/.cpp Template. Fragt vorher per UI nach."""
+        classname = re.sub(r'\W', '', classname) or "MyActor"
+        if not classname[0].isupper(): classname = classname.capitalize()
+        h = ordner / f"{classname}.h"
+        cpp = ordner / f"{classname}.cpp"
+        h_text = f"""#pragma once
+#include "CoreMinimal.h"
+#include "GameFramework/Actor.h"
+#include "{classname}.generated.h"
+
+UCLASS()
+class A{classname} : public AActor
+{{
+    GENERATED_BODY()
+public:
+    A{classname}();
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Health")
+    float MaxHP = 100.f;
+protected:
+    virtual void BeginPlay() override;
+public:
+    virtual void Tick(float DeltaTime) override;
+}};
+"""
+        cpp_text = f"""#include "{classname}.h"
+A{classname}::A{classname}()
+{{
+    PrimaryActorTick.bCanEverTick = true;
+}}
+void A{classname}::BeginPlay()
+{{
+    Super::BeginPlay();
+    UE_LOG(LogTemp, Warning, TEXT("{classname} ready! HP=%f"), MaxHP);
+}}
+void A{classname}::Tick(float DeltaTime)
+{{
+    Super::Tick(DeltaTime);
+}}
+"""
+        h.write_text(h_text, encoding="utf-8"); cpp.write_text(cpp_text, encoding="utf-8")
+        return h, cpp
+    def projekt_starten(self, uproject: Path, editor_exe: str):
+        return subprocess.Popen([editor_exe, str(uproject)])
+
+# ---------- Wissen (kompakt aus v2) ----------
+UNREAL_TIPPS = [
+    "Unreal-Tipp: BeginPlay für Setup, Tick nur wenn nötig – Tick frisst Performance!",
+    "Unreal-Tipp: UPROPERTY(EditAnywhere, BlueprintReadWrite) macht C++ Variablen im Editor sichtbar.",
+    "Unreal-Tipp: Enhanced Input ab UE 5.1 – altes Input Mapping ist deprecated.",
+    "Unreal-Tipp: Replication: nie Tick replizieren, nur Änderungen. Sonst Lag.",
+    "Unreal-Tipp: Bei deiner A1000 6GB: Lumen auf Medium, Schatten-Mittel, kein 4K.",
+]
+CODING_TIPPS = [
+    "Coding-Tipp: Kleine Funktionen, max 30 Zeilen, ein Job pro Funktion.",
+    "Coding-Tipp: UE_LOG(LogTemp, Warning, TEXT(\"x=%f\"), X) statt raten.",
+    "Coding-Tipp: Smart Pointer statt new/delete. In Unreal: UPROPERTY damit GC dich kennt.",
+]
+WISSEN = {
+    "blueprint": "Blueprints = visuelles Scripting. Prototyp ja, Performance-kritisch lieber C++. Funktionen statt Copy-Paste.",
+    "actor": "AActor = Basis für Welt-Objekte. Pawn = kontrollierbar, Character = Pawn mit Movement. Spawnen mit SpawnActor.",
+    "tick": "Tick läuft jedes Frame. PrimaryActorTick.bCanEverTick = true + Tick(DeltaTime) überschreiben. So selten wie möglich!",
+    "beginplay": "BeginPlay einmal beim Start. Super::BeginPlay() nicht vergessen!",
+    "uproperty": 'UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Health") float MaxHP = 100.f;',
+    "replication": "UPROPERTY(Replicated) + GetLifetimeReplicatedProps + DOREPLIFETIME. RPCs: UFUNCTION(Server/Client/NetMulticast).",
+    "lumen": "Lumen = dynamisches Licht ohne Backen. Bei deiner A1000 auf Medium lassen.",
+    "nanite": "Nanite = High-Poly ohne LODs, nur Static Meshes.",
+    "git": "git status / add / commit -m / push. Features in Branches.",
+    "c++": "In Unreal: TArray statt vector, FString statt string, kein delete auf UObject!",
+    "pointer": "Nie delete auf UObject – GC macht das. UPROPERTY() setzen sonst Crash.",
+    "performance": "Bei dir: 64GB RAM top, GPU mittel. Scalability Medium, Lumen Medium, DerivedDataCache leeren wenn Platte voll.",
+}
+def finde_wissen(f):
+    q = " " + f.lower() + " "
+    for k, v in WISSEN.items():
+        if k in q: return v
+    return None
+
+# ---------- Codex-Theme (dark) + Sessions ----------
+THEME = {
+    "bg": "#0d1117", "panel": "#161b22", "panel2": "#1c2128",
+    "fg": "#e6edf3", "muted": "#8b949e", "accent": "#2f81f7",
+    "green": "#3fb950", "orange": "#d29922", "red": "#f85149",
+    "du": "#79c0ff", "ki": "#e6edf3", "sys": "#8b949e",
+    "code_bg": "#1c2128", "code_fg": "#a5d6ff",
+}
+CHATS_DIR = WORKSPACE / "quassel-ki" / "chats"
+try: CHATS_DIR.mkdir(parents=True, exist_ok=True)
+except Exception: pass
+
+BEFEHLE = {
+    "/help": "Befehle: /neu /clear /still /laut /leise /shot /sehen /maus /memory /index /tipp /modell /ctx",
+    "/neu": None, "/clear": None, "/still": None, "/laut": None, "/leise": None,
+    "/shot": None, "/sehen": None, "/maus": None, "/memory": None,
+    "/index": None, "/tipp": None, "/modell": None, "/ctx": None,
+}
+
+# ---------- UI ----------
+class QuasselKI:
+    def __init__(self, root):
+        self.root = root
+        root.title("❯ quassel-codex v8")
+        root.geometry("1020x980"); root.minsize(760, 680)
+        self.sysinfo = system_check()
+        p = self.sysinfo["preset"]
+        self.bock_level = tk.IntVar(value=p["bock"])
+        self.stille_toleranz = tk.IntVar(value=p["stille"])
+        self.autonom = tk.BooleanVar(value=True)
+        # QUASSEL_VOICE=0 startet stumm (z.B. wenn im Call), sonst IMMER an: jede Ausgabe wird vorgelesen
+        _voice_wunsch = os.environ.get("QUASSEL_VOICE", "1") != "0"
+        self.vorlesen = tk.BooleanVar(value=(TTS_AVAILABLE or (EDGE_OK and PYGAME_OK)) and _voice_wunsch)
+        self.stimme_var = tk.StringVar(value="Katja (weiblich, neural)")
+        self.training = tk.BooleanVar(value=True)
+        self.pc_erlaubt = tk.BooleanVar(value=False)
+        self.sprecher = Sprecher(); self.sprecher.enabled = self.vorlesen.get()
+        self.pc = SafePC(self.log)
+        self.mcp = MCPClient(self.log)
+        threading.Thread(target=self._mcp_autostart, daemon=True).start()
+        self.letzte_user = time.time(); self.letzte_bot = time.time()
+        self.redelust = 30.0; self.stimmung = "mentor"
+        self.akt_projekt = None
+        self.history = []  # Chatverlauf für das Modell (role/content)
+        self._generating = False
+        self.anhaenge = []  # Liste von Path-Strings, landen beim nächsten Prompt im Kontext
+        self.live_ok = ollama_server_ok()
+        self._build_ui()
+        msg = (f"System-Check fertig! Profil: {self.sysinfo['profil']} | CPU-Kerne: {self.sysinfo['cpu']} | "
+                f"RAM: {self.sysinfo['ram']}GB | GPU: {self.sysinfo['gpu']} | Frei C:: {self.sysinfo['disk_free']}GB | "
+                f"Unreal: {list(self.sysinfo['editors'].keys()) or 'keins gefunden'}. {self.sysinfo['empfehlung']} "
+                f"Live-Modell '{OLLAMA_MODEL}': {'bereit, ich antworte live und lese ALLES vor.' if self.live_ok else 'nicht erreichbar, ich nutze den Offline-Modus.'} "
+                f"Du kannst mit mir über ALLES reden – nicht nur Unreal. Codex-UI aktiv: Sidebar links, /help für Befehle, Code wird markiert. Frag einfach los!")
+        self.log("Quassel-KI", msg); self.sprecher.sprich("Bereit im neuen Codex Look! Sidebar links, Befehle mit Schrägstrich. Frag einfach los.")
+        self._bock_loop()
+
+    def _build_ui(self):
+        T = THEME
+        self.root.configure(bg=T["bg"])
+        # --- Sidebar (Codex) ---
+        side = tk.Frame(self.root, bg=T["panel"], width=200)
+        side.pack(side="left", fill="y"); side.pack_propagate(False)
+        tk.Label(side, text="❯ chats", bg=T["panel"], fg=T["muted"], font=("Consolas", 10, "bold")).pack(anchor="w", padx=8, pady=(8, 2))
+        tk.Button(side, text="＋ Neuer Chat", command=self._chat_neu).pack(fill="x", padx=8)
+        self.chat_liste = tk.Listbox(side, height=9, font=("Segoe UI", 9))
+        self.chat_liste.pack(fill="x", padx=8, pady=4)
+        self.chat_liste.bind("<<ListboxSelect>>", lambda e: self._chat_laden())
+        tk.Label(side, text="❯ aktionen", bg=T["panel"], fg=T["muted"], font=("Consolas", 10, "bold")).pack(anchor="w", padx=8, pady=(6, 2))
+        for txt, cmd in [("📸 Shot", self.comp_shot), ("👁 Sehen", self.comp_sehen),
+                         ("🖱 Maus-Pos", self.comp_mauspos), ("📇 Index", self.index_bauen),
+                         ("📎 Anhang", self.datei_anhaengen), ("🧠 Memory", self.memory_zeigen),
+                         ("💡 Tipp", lambda: self.bot_sagt(random.choice(UNREAL_TIPPS))),
+                         ("🚀 UE öffnen", self.projekt_oeffnen)]:
+            tk.Button(side, text=txt, command=cmd).pack(fill="x", padx=8, pady=1)
+        tk.Label(side, text=f"{OLLAMA_MODEL}\n19B • qwen-coder", bg=T["panel"], fg=T["muted"],
+                 font=("Consolas", 8), justify="left").pack(side="bottom", anchor="w", padx=8, pady=8)
+        # --- Hauptbereich (wie bisher, wird danach dunkel gestylt) ---
+        sysframe = tk.LabelFrame(self.root, text="💻 System (Auto-Check beim Start)", padx=8, pady=4)
+        sysframe.pack(fill="x", padx=10, pady=4)
+        info = (f"{self.sysinfo['profil']} | RAM {self.sysinfo['ram']}GB | {self.sysinfo['gpu'][:40]} | "
+                f"C: frei {self.sysinfo['disk_free']}GB | UE: {', '.join(self.sysinfo['editors'].keys()) or '–'}")
+        tk.Label(sysframe, text=info, font=("Segoe UI", 8), fg="dimgray", wraplength=620, justify="left").pack(anchor="w")
+        tk.Label(sysframe, text=self.sysinfo["empfehlung"], font=("Segoe UI", 8, "italic"), wraplength=620, justify="left").pack(anchor="w")
+
+        top = tk.Frame(self.root, padx=10, pady=4); top.pack(fill="x")
+        tk.Label(top, text="❯ quassel-codex", font=("Consolas", 13, "bold")).pack(side="left")
+        self.status = tk.Label(top, text="", font=("Segoe UI", 9)); self.status.pack(side="left", padx=8)
+        self.live_label = tk.Label(top, text="", font=("Segoe UI", 9, "bold")); self.live_label.pack(side="right")
+
+        self.chat = scrolledtext.ScrolledText(self.root, wrap="word", state="disabled", font=("Segoe UI", 10))
+        self.chat.pack(fill="both", expand=True, padx=10, pady=4)
+
+        ctrl = tk.LabelFrame(self.root, text="Steuerung", padx=8, pady=6); ctrl.pack(fill="x", padx=10, pady=4)
+        r1 = tk.Frame(ctrl); r1.pack(fill="x")
+        tk.Label(r1, text="Bock:").pack(side="left")
+        tk.Scale(r1, from_=0, to=100, orient="horizontal", variable=self.bock_level, length=120).pack(side="left")
+        tk.Label(r1, text="Stille:").pack(side="left")
+        tk.Scale(r1, from_=5, to=120, orient="horizontal", variable=self.stille_toleranz, length=120).pack(side="left")
+        tk.Checkbutton(r1, text="Autonom", variable=self.autonom).pack(side="left")
+        tk.Checkbutton(r1, text="🔊 Alles vorlesen", variable=self.vorlesen, command=lambda: setattr(self.sprecher, 'enabled', self.vorlesen.get())).pack(side="left")
+        tk.Button(r1, text="🤫 Still!", command=self.sprecher.halt).pack(side="left", padx=4)
+        self._refresh_live_label()
+
+        r1b = tk.Frame(ctrl); r1b.pack(fill="x", pady=2)
+        tk.Label(r1b, text="Stimme:", font=("Segoe UI", 9)).pack(side="left")
+        stimmen = list(STIMMEN.keys())
+        if not (EDGE_OK and PYGAME_OK): stimmen = ["Windows (offline)"]
+        self.stimme_menü = tk.OptionMenu(r1b, self.stimme_var, *stimmen, command=self._stimme_wechsel)
+        self.stimme_menü.config(font=("Segoe UI", 9)); self.stimme_menü.pack(side="left", padx=4)
+        if not (EDGE_OK and PYGAME_OK):
+            self.stimme_var.set("Windows (offline)")
+        tk.Button(r1b, text="Test", command=lambda: self.sprecher.sprich("Hallo! Ich bin deine Quassel KI mit neuer Stimme.")).pack(side="left")
+        self._stimme_wechsel(self.stimme_var.get())
+
+        r2 = tk.Frame(ctrl); r2.pack(fill="x", pady=3)
+        tk.Checkbutton(r2, text="PC-Aktionen erlauben (fragt trotzdem nach)", variable=self.pc_erlaubt).pack(side="left")
+        tk.Button(r2, text="PC-Check erneut", command=self.neuer_check).pack(side="left", padx=4)
+        tk.Button(r2, text="Projekte finden", command=self.projekte_finden).pack(side="left", padx=4)
+        tk.Button(r2, text="Unreal-Tipp", command=lambda: self.bot_sagt(random.choice(UNREAL_TIPPS))).pack(side="left", padx=4)
+
+        r3 = tk.Frame(ctrl); r3.pack(fill="x", pady=3)
+        tk.Button(r3, text="Projekt öffnen in UE 🚀", command=self.projekt_oeffnen).pack(side="left")
+        tk.Button(r3, text="C++ Actor erstellen 🛠️", command=self.actor_dialog).pack(side="left", padx=5)
+        tk.Button(r3, text="Jetzt labern!", command=lambda: self.bot_sagt(random.choice(UNREAL_TIPPS + CODING_TIPPS))).pack(side="left", padx=5)
+        self.bock_meter = tk.Label(ctrl, text="", font=("Segoe UI", 8, "italic")); self.bock_meter.pack(anchor="w")
+
+        r4 = tk.Frame(ctrl); r4.pack(fill="x", pady=3)
+        tk.Button(r4, text="📎 Anhängen", command=self.datei_anhaengen).pack(side="left")
+        tk.Button(r4, text="🧠 Memory", command=self.memory_zeigen).pack(side="left", padx=5)
+        tk.Button(r4, text="📇 Index bauen", command=self.index_bauen).pack(side="left")
+        self.anhang_label = tk.Label(r4, text="kein Anhang", font=("Segoe UI", 8), fg="gray")
+        self.anhang_label.pack(side="left", padx=8)
+
+        bot = tk.Frame(self.root, padx=10, pady=6); bot.pack(fill="x")
+        self.entry = tk.Entry(bot, font=("Segoe UI", 10)); self.entry.pack(side="left", fill="x", expand=True, padx=(0, 6))
+        self.entry.bind("<Return>", lambda e: self.user_send()); self.entry.bind("<Key>", lambda e: self._aktiv())
+        self.send_btn = tk.Button(bot, text="Senden", command=self.user_send); self.send_btn.pack(side="right")
+        tk.Label(self.root, text="Live-Chat mit quassel-ki (19GB) – frag einfach ALLES. PC-Befehle: 'Projekte finden', 'Actor erstellen'.", font=("Segoe UI", 8), fg="gray").pack(pady=(0,2))
+
+        comp = tk.LabelFrame(self.root, text="👁 Sehen + 🖱 Handeln (Klicks immer mit Nachfrage!)", padx=8, pady=4)
+        comp.pack(fill="x", padx=10, pady=(0,6))
+        crow = tk.Frame(comp); crow.pack(fill="x")
+        tk.Button(crow, text="📸 Screenshot", command=self.comp_shot).pack(side="left")
+        tk.Button(crow, text="👁 Was siehst du?", command=self.comp_sehen).pack(side="left", padx=5)
+        tk.Button(crow, text="🖱 Maus-Pos", command=self.comp_mauspos).pack(side="left")
+        tk.Button(crow, text="👆 Klicken...", command=self.comp_klick).pack(side="left", padx=5)
+        tk.Button(crow, text="⌨ Text schreiben...", command=self.comp_schreiben).pack(side="left")
+
+        mcp = tk.LabelFrame(self.root, text="MCP-Werkzeuge (nach Bestätigung)", padx=8, pady=4)
+        mcp.pack(fill="x", padx=10, pady=(0,6))
+        mrow = tk.Frame(mcp); mrow.pack(fill="x")
+        self.mcp_liste = tk.Listbox(mrow, height=4, font=("Segoe UI", 9)); self.mcp_liste.pack(side="left", fill="x", expand=True)
+        mbtn = tk.Frame(mrow); mbtn.pack(side="right", padx=(6,0))
+        tk.Button(mbtn, text="Neu laden", command=self.mcp_refresh).pack(fill="x")
+        tk.Button(mbtn, text="Ausführen", command=self.mcp_run).pack(fill="x", pady=3)
+        tk.Button(mbtn, text="An Modell senden", command=self.mcp_an_modell).pack(fill="x")
+        prow = tk.Frame(mcp); prow.pack(fill="x", pady=(3,0))
+        tk.Label(prow, text="Parameter (JSON):", font=("Segoe UI", 8)).pack(side="left")
+        self.mcp_params = tk.Entry(prow, font=("Segoe UI", 9)); self.mcp_params.pack(side="left", fill="x", expand=True, padx=4)
+        self.mcp_params.insert(0, '{"pfad": "", "name": ""}')
+        self.mcp_ergebnis = ""
+
+        # --- Codex-Finish: Tags, Dark-Style, Statusleiste, Sessions ---
+        self.chat.tag_config("du", foreground=THEME["du"], font=("Segoe UI", 10, "bold"))
+        self.chat.tag_config("ki", foreground=THEME["ki"], font=("Segoe UI", 10, "bold"))
+        self.chat.tag_config("sys", foreground=THEME["sys"], font=("Segoe UI", 9, "italic"))
+        self.chat.tag_config("code", background=THEME["code_bg"], foreground=THEME["code_fg"], font=("Consolas", 10))
+        self._dark_alles(self.root)
+        self._refresh_live_label()  # Farbe nach Dark-Style neu setzen
+        bar = tk.Frame(self.root, bg=THEME["panel"])
+        bar.pack(fill="x", side="bottom")
+        self.ctx_label = tk.Label(bar, text="", bg=THEME["panel"], fg=THEME["muted"], font=("Consolas", 8))
+        self.ctx_label.pack(side="right", padx=8)
+        tk.Label(bar, text="❯ /help für Befehle", bg=THEME["panel"], fg=THEME["muted"], font=("Consolas", 8)).pack(side="left", padx=8)
+        self._ctx_refresh()
+        self._chats_refresh()
+
+    def _dark_alles(self, w):
+        T = THEME
+        try:
+            cls = w.winfo_class()
+            if cls == "Frame":
+                w.configure(bg=T["bg"])
+            elif cls == "Label":
+                try:
+                    pbg = w.master.cget("bg")
+                    if not str(pbg).startswith("#"): pbg = T["bg"]
+                except Exception:
+                    pbg = T["bg"]
+                try: fstr = str(w.cget("font"))
+                except Exception: fstr = ""
+                w.configure(bg=pbg, fg=T["muted"] if (" 8" in fstr or "italic" in fstr) else T["fg"])
+            elif cls == "Button":
+                w.configure(bg=T["panel2"], fg=T["fg"], activebackground=T["accent"], activeforeground="white",
+                            relief="flat", padx=6, pady=2)
+            elif cls == "Entry":
+                w.configure(bg=T["panel2"], fg=T["fg"], insertbackground=T["fg"], relief="flat")
+            elif cls == "Text":
+                w.configure(bg=T["bg"], fg=T["fg"], insertbackground=T["fg"], relief="flat")
+            elif cls == "Listbox":
+                w.configure(bg=T["panel2"], fg=T["fg"], relief="flat", highlightthickness=0, selectbackground=T["accent"])
+            elif cls == "Checkbutton":
+                w.configure(bg=w.master.cget("bg"), fg=T["fg"], selectcolor=T["panel2"], activebackground=w.master.cget("bg"))
+            elif cls == "Scale":
+                w.configure(bg=w.master.cget("bg"), fg=T["muted"], troughcolor=T["panel2"], highlightthickness=0)
+            elif cls == "Labelframe":
+                w.configure(bg=T["panel"], fg=T["muted"])
+            elif cls == "Menubutton":
+                w.configure(bg=T["panel2"], fg=T["fg"], activebackground=T["accent"])
+        except Exception:
+            pass
+        for c in w.winfo_children():
+            self._dark_alles(c)
+
+    # --- Basis ---
+    def _refresh_live_label(self):
+        try:
+            if self.live_ok:
+                self.live_label.config(text="● LIVE: quassel-ki", fg="green")
+            else:
+                self.live_label.config(text="○ OFFLINE-Modus", fg="orange")
+        except Exception: pass
+    def log(self, wer, text):
+        z = datetime.now().strftime("%H:%M:%S")
+        tag = "ki" if wer == "Quassel-KI" else ("du" if wer == "Du" else "sys")
+        start = self.chat.index("end-1c")
+        self.chat.configure(state="normal")
+        self.chat.insert("end", f"[{z}] ❯ {wer}:\n", tag)
+        self.chat.insert("end", f"{text}\n\n")
+        self.chat.configure(state="disabled"); self.chat.see("end")
+        self._tag_code(start, self.chat.index("end-1c"))
+    def _tag_code(self, von, bis):
+        try:
+            self.chat.configure(state="normal")
+            pos, offen = von, None
+            while True:
+                pos = self.chat.search("```", pos, stopindex=bis, exact=True)
+                if not pos: break
+                if offen is None:
+                    offen = pos
+                else:
+                    a = self.chat.index(f"{offen} lineend +1c")
+                    b = self.chat.index(f"{pos} linestart")
+                    if self.chat.compare(a, "<", b):
+                        self.chat.tag_add("code", a, b)
+                    offen = None
+                pos = self.chat.index(f"{pos}+3c")
+            self.chat.configure(state="disabled")
+        except Exception:
+            pass
+    def _ctx_refresh(self):
+        try: self.ctx_label.config(text=f"ctx {len(self.history)}/8 • {OLLAMA_MODEL} • Bock {self.bock_level.get()}%")
+        except Exception: pass
+    # --- Sessions (Codex-Sidebar) ---
+    def _chat_dateiname(self):
+        return datetime.now().strftime("%Y%m%d_%H%M%S")
+    def _chats_refresh(self):
+        try:
+            self.chat_liste.delete(0, "end")
+            for f in sorted(CHATS_DIR.glob("*.json"), reverse=True)[:30]:
+                self.chat_liste.insert("end", f.stem)
+        except Exception: pass
+    def _chat_neu(self):
+        try:
+            if self.history:
+                name = re.sub(r'\W+', '_', self.history[0].get("content", "chat"))[:30] or "chat"
+                (CHATS_DIR / f"{self._chat_dateiname()}_{name}.json").write_text(
+                    json.dumps({"display": self.chat.get("1.0", "end-1c"), "history": self.history}, ensure_ascii=False), encoding="utf-8")
+        except Exception: pass
+        self.history = []
+        self.chat.configure(state="normal"); self.chat.delete("1.0", "end"); self.chat.configure(state="disabled")
+        self._chats_refresh(); self._ctx_refresh()
+        self.bot_sagt("Neuer Chat. Alter Kram ist in der Sidebar gespeichert.")
+    def _chat_laden(self):
+        try: key = self.chat_liste.get(self.chat_liste.curselection()[0])
+        except Exception: return
+        try:
+            obj = json.loads((CHATS_DIR / f"{key}.json").read_text(encoding="utf-8"))
+            self.history = obj.get("history", [])[-8:]
+            self.chat.configure(state="normal"); self.chat.delete("1.0", "end")
+            self.chat.insert("end", obj.get("display", "")); self.chat.configure(state="disabled")
+            self._tag_code("1.0", "end"); self.chat.see("end"); self._ctx_refresh()
+        except Exception: pass
+    # --- Slash-Befehle (Codex) ---
+    def _befehl(self, m):
+        cmd = m.split()[0].lower()
+        if cmd == "/help":
+            self.bot_sagt("❯ Befehle:\n" + "\n".join(sorted(BEFEHLE))); return True
+        if cmd == "/neu": self._chat_neu(); return True
+        if cmd == "/clear":
+            self.chat.configure(state="normal"); self.chat.delete("1.0", "end"); self.chat.configure(state="disabled"); return True
+        if cmd == "/still":
+            self.sprecher.halt(); self.bot_sagt("Ok ok, ich bin still. (Weiter geht's mit /laut)"); return True
+        if cmd == "/laut":
+            self.vorlesen.set(True); self.sprecher.enabled = True; self.bot_sagt("Laut wieder an!"); return True
+        if cmd == "/leise":
+            self.vorlesen.set(False); self.sprecher.enabled = False; self.sprecher.halt(); self.log("sys", "Stimme aus."); return True
+        if cmd == "/shot": self.comp_shot(); return True
+        if cmd == "/sehen": self.comp_sehen(); return True
+        if cmd == "/maus": self.comp_mauspos(); return True
+        if cmd == "/memory": self.memory_zeigen(); return True
+        if cmd == "/index": self.index_bauen(); return True
+        if cmd == "/tipp": self.bot_sagt(random.choice(UNREAL_TIPPS + CODING_TIPPS)); return True
+        if cmd == "/modell":
+            self.bot_sagt(f"Modell: {OLLAMA_MODEL} (19B qwen-coder) + Vision: {VISION_MODEL}. Lokal, offline-fähig."); return True
+        if cmd == "/ctx":
+            self.bot_sagt(f"Kontext: {len(self.history)}/8 Nachrichten. Memory: {len(memory_laden().get('fakten', []))} Fakten."); return True
+        if cmd.startswith("/"):
+            self.bot_sagt(f"Unbekannt: {cmd}. /help zeigt alle."); return True
+        return False
+    def _aktiv(self): self.letzte_user = time.time(); self.redelust = max(0, self.redelust - 2)
+    def bot_sagt(self, t):
+        """Jede Ausgabe wird geloggt UND vorgelesen."""
+        self.log("Quassel-KI", t); self.sprecher.sprich(t)
+        self.history.append({"role": "assistant", "content": str(t)[:1500]})
+        self.history = self.history[-8:]; self._ctx_refresh()
+        self.letzte_bot = time.time(); self.redelust = max(0, self.redelust - 25)
+    def user_send(self):
+        m = self.entry.get().strip()
+        if not m or self._generating: return
+        self.entry.delete(0, "end"); self._aktiv(); self.log("Du", m)
+        if m.startswith("/"):
+            self._befehl(m); return
+        self.history.append({"role": "user", "content": m})
+        self.history = self.history[-8:]; self._ctx_refresh()
+        # PC-Kommandos in natürlicher Sprache (wie bisher)
+        ml = m.lower()
+        if any(w in ml for w in ["projekt finden", "finde projekt", "uproject suchen"]):
+            self.projekte_finden(); return
+        if "actor erstellen" in ml or "neue klasse" in ml:
+            self.actor_dialog(); return
+        if "check" in ml and "system" in ml:
+            self.neuer_check(); return
+        if "screenshot" in ml or "bildschirm foto" in ml or "mache ein foto" in ml:
+            self.comp_shot(); return
+        if any(w in ml for w in ["was siehst du", "schau auf den bildschirm", "siehst du", "bildschirm sehen"]):
+            self.comp_sehen(); return
+        if "maus" in ml and ("position" in ml or "wo ist" in ml or "zeig" in ml):
+            self.comp_mauspos(); return
+        if "klick" in ml:
+            self.comp_klick(); return
+        if ml.startswith("merk dir"):
+            fakt = m[8:].strip()
+            if not fakt:
+                self.bot_sagt("Was soll ich mir merken? Schreib z.B. 'merk dir mein Projekt heißt ZombieRacer'."); return
+            memory_hinzu(fakt)
+            self.history.pop()  # Kommando nicht in den Verlauf
+            self.bot_sagt(f"Gemerk! '{fakt}' – vergesse ich nicht mehr. (🧠 zeigt alles)"); return
+        if "vergiss" in ml and "alles" in ml:
+            MEMORY_PFAD.write_text(json.dumps({"fakten": []}, ensure_ascii=False), encoding="utf-8")
+            self.bot_sagt("Alles vergessen. Neuer Mensch, neues Glück."); return
+        # Live-Modell fragen, sonst Offline-Fallback
+        if ollama_server_ok():
+            self.live_ok = True; self._refresh_live_label()
+            self._live_frage(list(self.history))
+        else:
+            self.live_ok = False; self._refresh_live_label()
+            w = finde_wissen(m)
+            if w: self.root.after(400, lambda: self.bot_sagt(w + " (Offline-Modus: Ollama gerade nicht erreichbar.)")); return
+            self.root.after(600, lambda: self.bot_sagt("Ollama ist gerade nicht erreichbar – ich bin im Offline-Modus. Starte Ollama (ollama serve), dann rede ich wieder live über alles mit dir."))
+    def _live_frage(self, verlauf):
+        # Quassel-Stopp: während der Prompt läuft, kein autonomes Gequassel + keine alte Warteschlange
+        self.sprecher.halt()
+        self._generating = True
+        # Kontext: Memory + Anhänge vorne anstellen
+        nachrichten = []
+        mem = memory_text()
+        if mem: nachrichten.append({"role": "system", "content": mem})
+        if self.anhaenge:
+            teile = []
+            for a in self.anhaenge:
+                inhalt, err = datei_text_lesen(a)
+                teile.append(f"--- Datei {Path(a).name} ---\n" + (inhalt if inhalt else f"Fehler: {err}"))
+            nachrichten.append({"role": "user", "content": "Angehängte Dateien:\n" + "\n".join(teile)[:14000]})
+            self.anhaenge = []
+            try: self.root.after(0, self._anhang_refresh)
+            except Exception: pass
+        nachrichten += verlauf
+        try: self.send_btn.config(state="disabled")
+        except Exception: pass
+        z = datetime.now().strftime("%H:%M:%S")
+        self.chat.configure(state="normal")
+        self.chat.insert("end", f"[{z}] ❯ Quassel-KI:\n", "ki")
+        self._stream_start = self.chat.index("end-1c")
+        self.chat.configure(state="disabled"); self.chat.see("end")
+        out_q, fertig = queue.Queue(), threading.Event()
+        self._live_out, self._live_fertig, self._live_text = out_q, fertig, ""
+        threading.Thread(target=ollama_stream, args=(nachrichten, out_q, fertig), daemon=True).start()
+        self.root.after(80, self._pump_stream)
+    def _pump_stream(self):
+        try:
+            while True:
+                try: tok = self._live_out.get_nowait()
+                except queue.Empty: break
+                self._live_text += tok
+                self.chat.configure(state="normal"); self.chat.insert("end", tok)
+                self.chat.configure(state="disabled"); self.chat.see("end")
+        except Exception: pass
+        if self._live_fertig.is_set() and self._live_out.empty():
+            self.chat.configure(state="normal"); self.chat.insert("end", "\n\n")
+            self.chat.configure(state="disabled"); self.chat.see("end")
+            try: self._tag_code(self._stream_start, self.chat.index("end-1c"))
+            except Exception: pass
+            self._ctx_refresh()
+            text = self._live_text.strip()
+            if text:
+                self.sprecher.sprich(text)  # jede Live-Antwort wird vorgelesen
+                self.history.append({"role": "assistant", "content": text[:1500]})
+                self.history = self.history[-8:]
+            self.letzte_bot = time.time(); self.redelust = max(0, self.redelust - 25)
+            self._generating = False
+            try: self.send_btn.config(state="normal")
+            except Exception: pass
+            return
+        self.root.after(80, self._pump_stream)
+
+    # --- MCP ---
+    def _mcp_autostart(self):
+        cfg = self.mcp.config_laden()
+        for name, scfg in cfg.get("servers", {}).items():
+            if scfg.get("enabled"):
+                self.mcp.server_starten(name, scfg)
+        self.root.after(0, self.mcp_refresh)
+    def mcp_refresh(self):
+        try:
+            self.mcp_liste.delete(0, "end")
+            for t in self.mcp.alle_tools():
+                self.mcp_liste.insert("end", t)
+        except Exception: pass
+    def _mcp_gewaehlt(self):
+        try: return self.mcp_liste.get(self.mcp_liste.curselection()[0])
+        except Exception: return None
+    def _mcp_ctx(self):
+        return {"pc": self.pc, "sysinfo": self.sysinfo, "projekt": self.akt_projekt}
+    def mcp_run(self):
+        tool = self._mcp_gewaehlt()
+        if not tool:
+            self.bot_sagt("Wähl erst ein MCP-Werkzeug aus der Liste."); return
+        try: args = json.loads(self.mcp_params.get().strip() or "{}")
+        except Exception: args = {}
+        server = tool.split("/")[0]
+        if server != "lokal" or tool.endswith(("datei_lesen", "code_ausfuehren", "projekt_index")):
+            if not messagebox.askyesno("MCP ausführen?", f"Werkzeug '{tool}' mit {args} ausführen?"):
+                return
+        erg = self.mcp.aufrufen(tool, args, self._mcp_ctx())
+        self.mcp_ergebnis = erg
+        self.bot_sagt(f"MCP '{tool}' Ergebnis:\n{erg[:1500]}")
+    def mcp_an_modell(self):
+        tool = self._mcp_gewaehlt()
+        if not tool:
+            self.bot_sagt("Wähl erst ein MCP-Werkzeug aus."); return
+        try: args = json.loads(self.mcp_params.get().strip() or "{}")
+        except Exception: args = {}
+        erg = self.mcp.aufrufen(tool, args, self._mcp_ctx())
+        self.mcp_ergebnis = erg
+        self.entry.delete(0, "end")
+        self.entry.insert(0, f"Werkzeug {tool} meldet: {erg[:800]} – was bedeutet das, was soll ich tun?")
+        self.user_send()
+
+    def _stimme_wechsel(self, wahl):
+        self.sprecher.stimme = STIMMEN.get(wahl, "de-DE-KatjaNeural")
+        self.sprecher.backend = "windows" if self.sprecher.stimme == "windows" else ("edge" if (EDGE_OK and PYGAME_OK) else "windows")
+
+    # --- Sehen + Handeln (Quassel-Fähigkeit bleibt aktiv, pausiert nur bei Generierung) ---
+    def comp_shot(self):
+        pf, err = screenshot_machen()
+        if err:
+            self.bot_sagt(f"Screenshot geht nicht: {err}"); return
+        self.log("Quassel-KI", f"Screenshot: {pf}")
+        self.sprecher.sprich("Schau mal, so sehe ich deinen Bildschirm gerade.")
+        try:
+            from PIL import Image, ImageTk
+            top = tk.Toplevel(self.root); top.title(str(pf.name))
+            img = Image.open(pf); img.thumbnail((640, 640))
+            tkimg = ImageTk.PhotoImage(img)
+            tk.Label(top, image=tkimg).pack()
+            top._ref = tkimg  # gegen GC
+        except Exception: pass
+    def comp_sehen(self):
+        frage = self.entry.get().strip() or "Was ist auf dem Bildschirm zu sehen und was sollte ich als Nächstes tun?"
+        self.entry.delete(0, "end"); self._aktiv()
+        self.log("Du", f"[blickt auf Bildschirm] {frage}")
+        self.sprecher.halt(); self._generating = True
+        def _arbeit():
+            pf, err = screenshot_machen()
+            if err:
+                self.root.after(0, lambda: (setattr(self, "_generating", False), self.bot_sagt(f"Sehen geht nicht: {err}"))); return
+            try:
+                # Vision-Modell versteht Englisch am besten -> danach antwortet quassel-ki auf Deutsch
+                beschreibung = bild_sehen("Describe this screenshot in detail: active windows, texts, buttons, what is happening.", pf)
+            except Exception as e:
+                self.root.after(0, lambda: (setattr(self, "_generating", False), self.bot_sagt(f"Vision-Modell ({VISION_MODEL}) nicht bereit: {e}. Hole es mit: ollama pull moondream"))); return
+            self.root.after(0, lambda: self._sehen_fertig(frage, beschreibung))
+        threading.Thread(target=_arbeit, daemon=True).start()
+    def _sehen_fertig(self, frage, beschreibung):
+        self.history.append({"role": "user", "content": f"[Bildschirmbeschreibung per Vision: {beschreibung[:1200]}] Nutzerfrage dazu: {frage}. Antworte auf Deutsch, frech und hilfreich."})
+        self.history = self.history[-8:]
+        self._generating = False
+        self._live_frage(list(self.history))
+    def comp_mauspos(self):
+        if not PYAUTO_OK:
+            self.bot_sagt("Maus-Steuerung fehlt: pip install pyautogui"); return
+        x, y = _pag.position()
+        self.bot_sagt(f"Meine Maus ist gerade bei x={x}, y={y}. Sag mir Koordinaten und ich klicke dort – aber nur nach deiner Bestätigung. (Failsafe: Maus in die Bildschirm-Ecke = Stopp)")
+    def comp_klick(self):
+        if not PYAUTO_OK:
+            self.bot_sagt("Maus-Steuerung fehlt: pip install pyautogui"); return
+        ko = simpledialog.askstring("Klicken", "Wohin? Format: x,y  (z.B. 800,450). Tipp: erst 'Maus-Pos' zum Kalibrieren.", parent=self.root)
+        if not ko: return
+        try: x, y = [int(v) for v in ko.replace(" ", "").split(",")]
+        except Exception:
+            self.bot_sagt("Das habe ich nicht verstanden. Format: x,y – z.B. 800,450."); return
+        if not messagebox.askyesno("Wirklich klicken?", f"Soll ich bei x={x}, y={y} linksklicken?"):
+            self.log("Quassel-KI", "(Klick abgebrochen.)"); return
+        threading.Thread(target=lambda: (_pag.moveTo(x, y, duration=0.4), _pag.click()), daemon=True).start()
+        self.bot_sagt(f"Geklickt bei {x},{y}. Ich quassle natürlich weiter.")
+    def comp_schreiben(self):
+        if not PYAUTO_OK:
+            self.bot_sagt("Maus-Steuerung fehlt: pip install pyautogui"); return
+        txt = simpledialog.askstring("Text schreiben", "Welchen Text soll ich tippen? (Feld vorher anklicken!)", parent=self.root)
+        if not txt: return
+        if not messagebox.askyesno("Wirklich tippen?", f"Diesen Text tippen?\n{txt[:200]}"):
+            return
+        threading.Thread(target=lambda: _pag.write(txt, interval=0.02), daemon=True).start()
+        self.bot_sagt("Getippt. Weiter geht's.")
+
+    # --- GPT-Features: Anhang, Memory, Index ---
+    def _anhang_refresh(self):
+        try:
+            n = len(self.anhaenge)
+            self.anhang_label.config(text="kein Anhang" if not n else f"📎 {n} Datei(en): " + ", ".join(Path(a).name for a in self.anhaenge[-2:]))
+        except Exception: pass
+    def datei_anhaengen(self):
+        pf = filedialog.askopenfilename(title="Datei anhängen (Code/Text, max 200KB)",
+            filetypes=[("Code/Text", "*.h *.cpp *.cs *.py *.ini *.json *.txt *.md *.uproject"), ("Alle", "*.*")])
+        if not pf: return
+        try:
+            if Path(pf).stat().st_size > 200000:
+                self.bot_sagt("Datei zu groß (>200KB). Nimm einen Ausschnitt."); return
+        except Exception as e:
+            self.bot_sagt(f"Geht nicht: {e}"); return
+        self.anhaenge.append(pf); self._anhang_refresh()
+        self.bot_sagt(f"Angehängt: {Path(pf).name}. Stell jetzt deine Frage dazu – ich lese die Datei mit.")
+    def memory_zeigen(self):
+        fakten = memory_laden().get("fakten", [])
+        txt = "Noch nichts gemerkt. Sag 'merk dir ...'." if not fakten else "\n".join(f"• {f}" for f in fakten)
+        if fakten and messagebox.askyesno("Memory", f"Gemerkte Fakten:\n{txt}\n\nAlles vergessen?"):
+            MEMORY_PFAD.write_text(json.dumps({"fakten": []}, ensure_ascii=False), encoding="utf-8")
+            self.bot_sagt("Memory gelöscht. Wer bist du überhaupt?")
+        else:
+            self.bot_sagt(f"Mein Gedächtnis:\n{txt}")
+    def index_bauen(self):
+        basis = self.akt_projekt.parent if self.akt_projekt else None
+        if not basis:
+            basis = filedialog.askdirectory(title="Unreal-Projektordner wählen")
+            if not basis: return
+        self.bot_sagt("Scanne Projekt...")
+        def _arbeit():
+            try:
+                treffer = projekt_index_bauen(basis)
+                self.root.after(0, lambda: self.bot_sagt(f"Index fertig: {len(treffer)} Dateien. Frag z.B. 'was macht HealthComponent?' und hänge die Datei per 📎 an."))
+            except Exception as e:
+                self.root.after(0, lambda: self.bot_sagt(f"Index-Fehler: {e}"))
+        threading.Thread(target=_arbeit, daemon=True).start()
+
+    # --- PC / Unreal Aktionen (immer mit Nachfrage!) ---
+    def _darf(self):
+        if not self.pc_erlaubt.get():
+            self.bot_sagt("PC-Aktionen sind aus. Hake oben 'PC-Aktionen erlauben' an – ich frage trotzdem vor jedem Schritt nach. Sicherheit zuerst.")
+            return False
+        return True
+    def neuer_check(self):
+        self.sysinfo = system_check()
+        self.bot_sagt(f"Neuer Check: {self.sysinfo['profil']}, RAM {self.sysinfo['ram']}GB, frei {self.sysinfo['disk_free']}GB. {self.sysinfo['empfehlung']}")
+    def projekte_finden(self):
+        projs = self.pc.finde_projekte()
+        if not projs:
+            self.bot_sagt("Keine .uproject gefunden in Documents/Workspace. Sag mir den Ordner, oder erstelle ein Projekt in UE 5.8 (Third Person Template zum Lernen).")
+            return
+        self.akt_projekt = projs[0]
+        txt = "Gefunden:\n" + "\n".join(f"• {p}" for p in projs[:5])
+        info = self.pc.lese_uproject(self.akt_projekt)
+        txt += f"\nAktives Projekt: {self.akt_projekt.name} (Engine: {info.get('EngineAssociation', '?')})"
+        self.bot_sagt(txt)
+    def projekt_oeffnen(self):
+        if not self._darf(): return
+        if not self.akt_projekt:
+            self.projekte_finden()
+            if not self.akt_projekt: return
+        eds = self.sysinfo["editors"]
+        if not eds:
+            self.bot_sagt("Kein UnrealEditor gefunden. Installiere UE über Epic Launcher."); return
+        # passende Version wählen, sonst neueste
+        info = self.pc.lese_uproject(self.akt_projekt)
+        ver = str(info.get("EngineAssociation", "")).strip("{} ")
+        exe = eds.get(ver, list(eds.values())[-1])
+        if not messagebox.askyesno("Wirklich starten?", f"Unreal starten?\nEditor: {exe}\nProjekt: {self.akt_projekt}\nDas dauert 1-3 Min und frisst RAM."):
+            self.log("Quassel-KI", "(Start abgebrochen – deine Entscheidung.)"); return
+        try:
+            self.pc.projekt_starten(self.akt_projekt, exe)
+            self.bot_sagt(f"Starte {self.akt_projekt.name} mit UE {ver or '?'}... Gib ihm Zeit. Bei deiner A1000: Scalability erstmal auf Medium lassen!")
+        except Exception as e:
+            self.bot_sagt(f"Start fehlgeschlagen: {e}")
+    def actor_dialog(self):
+        if not self._darf(): return
+        name = simpledialog.askstring("C++ Actor", "Klassenname (z.B. HealthPickup):", parent=self.root)
+        if not name: return
+        ziel = filedialog.askdirectory(title="Quell-Ordner wählen (z.B. .../Source/DeinGame/)", initialdir=str(WORKSPACE))
+        if not ziel: return
+        zp = Path(ziel)
+        if not self.pc._im_erlaubten_bereich(zp):
+            # trotzdem erlauben nach extra Nachfrage, aber warnen
+            if not messagebox.askyesno("Außerhalb?", f"{zp} liegt außerhalb meiner Standard-Ordner. Trotzdem dort schreiben?"):
+                return
+        if not messagebox.askyesno("Dateien schreiben?", f"Schreibe {name}.h + {name}.cpp nach\n{zp}?"):
+            return
+        try:
+            h, cpp = self.pc.actor_erstellen(zp, name)
+            self.bot_sagt(f"Fertig! {h.name} + {cpp.name} erstellt. In UE: Tools → Refresh Visual Studio Project, dann kompilieren. Denk an UPROPERTY für den Editor!")
+        except Exception as e:
+            self.bot_sagt(f"Fehler beim Schreiben: {e}")
+
+    def _bock_loop(self):
+        # Pausiert solange ein Prompt ausgeführt wird (Quassel-Stopp bei Generierung)
+        if self.autonom.get() and not self._generating:
+            jetzt = time.time(); stille = jetzt - self.letzte_user; seit = jetzt - self.letzte_bot
+            tol = self.stille_toleranz.get(); bock = self.bock_level.get()
+            if stille > tol: self.redelust += (bock/100)*8 + 2
+            elif stille > tol/2: self.redelust += (bock/100)*3
+            self.redelust = min(100, self.redelust)
+            self.bock_meter.config(text=f"Redelust {int(self.redelust)}% (still {int(stille)}s)")
+            self.status.config(text=f"{self.stimmung} | {self.sysinfo['profil']}")
+            if self.redelust > 80 and seit > 12:
+                msg = random.choice(UNREAL_TIPPS + CODING_TIPPS) if (self.training.get() and random.random() < 0.7) else random.choice(["Ey, noch da? Frag mich was zu Unreal!", "Mir ist langweilig – soll ich Projekte suchen? Schreib 'Projekte finden'."])
+                self.bot_sagt(msg)
+        self.root.after(1000, self._bock_loop)
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = QuasselKI(root)
+    try: root.mainloop()
+    finally:
+        try: app.sprecher.stop()
+        except: pass
+        try: app.mcp.stoppen()
+        except: pass

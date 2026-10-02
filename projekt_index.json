@@ -1,0 +1,661 @@
+{
+  "ordner": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew",
+  "dateien": [
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\SAOMMOnew.uproject",
+      "bytes": 2273
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Config\\DefaultEditor.ini",
+      "bytes": 58732
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Config\\DefaultEngine.ini",
+      "bytes": 8336
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Config\\DefaultGame.ini",
+      "bytes": 449
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Config\\DefaultInput.ini",
+      "bytes": 8959
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew.Target.cs",
+      "bytes": 410
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnewEditor.Target.cs",
+      "bytes": 424
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\ArtSource\\Props\\add_ubx_collision.py",
+      "bytes": 6058
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\ArtSource\\Sword\\make_sword.py",
+      "bytes": 6783
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Content\\Python\\build_blockout.py",
+      "bytes": 10181
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Content\\Python\\build_master_materials.py",
+      "bytes": 10317
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Content\\Python\\build_metal_material.py",
+      "bytes": 9544
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Content\\Python\\build_navmesh.py",
+      "bytes": 9022
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Content\\Python\\dressing.py",
+      "bytes": 3342
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Content\\Python\\dress_arena.py",
+      "bytes": 16629
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Content\\Python\\fix_perf_flags.py",
+      "bytes": 2581
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Content\\Python\\import_cc0_meshes.py",
+      "bytes": 20324
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Content\\Python\\import_cc0_textures.py",
+      "bytes": 5154
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Content\\Python\\perf_audit.py",
+      "bytes": 12398
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Content\\Python\\probe_bodieswap.py",
+      "bytes": 4105
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Content\\Python\\probe_collision_diff.py",
+      "bytes": 4967
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Content\\Python\\probe_naming_types.py",
+      "bytes": 2493
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Content\\Python\\probe_render_data.py",
+      "bytes": 2350
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Content\\Python\\verify_arena.py",
+      "bytes": 22733
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\LegacyCharacter.cpp",
+      "bytes": 4740
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\LegacyCharacter.h",
+      "bytes": 2699
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\LegacyGameMode.cpp",
+      "bytes": 137
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\LegacyGameMode.h",
+      "bytes": 385
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\LegacyPlayerController.cpp",
+      "bytes": 1834
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\LegacyPlayerController.h",
+      "bytes": 1498
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\SAOMMOnew.Build.cs",
+      "bytes": 1977
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\SAOMMOnew.cpp",
+      "bytes": 228
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\SAOMMOnew.h",
+      "bytes": 195
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Character\\PlayerCharacter.cpp",
+      "bytes": 13888
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Character\\PlayerCharacter.h",
+      "bytes": 8397
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Character\\SAOCharacterData.cpp",
+      "bytes": 2236
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Character\\SAOCharacterData.h",
+      "bytes": 3407
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Combat\\CombatComponent.cpp",
+      "bytes": 7403
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Combat\\CombatComponent.h",
+      "bytes": 3371
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Combat\\Sword.cpp",
+      "bytes": 6489
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Combat\\Sword.h",
+      "bytes": 4947
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Core\\CombatInterfaces.h",
+      "bytes": 1875
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Core\\ItemTypes.h",
+      "bytes": 961
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Core\\MainGameMode.cpp",
+      "bytes": 1006
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Core\\MainGameMode.h",
+      "bytes": 1139
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Core\\MainPlayerController.cpp",
+      "bytes": 14955
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Core\\MainPlayerController.h",
+      "bytes": 5843
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Core\\PlayerSaveGame.h",
+      "bytes": 1469
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Core\\SharedTypes.h",
+      "bytes": 3382
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Enemies\\Enemy.cpp",
+      "bytes": 12451
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Enemies\\Enemy.h",
+      "bytes": 6414
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Enemies\\EnemyHealthWidget.cpp",
+      "bytes": 701
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Enemies\\EnemyHealthWidget.h",
+      "bytes": 690
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Enemies\\EnemySpawner.cpp",
+      "bytes": 2812
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Enemies\\EnemySpawner.h",
+      "bytes": 2342
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Input\\InputFrameComponent.cpp",
+      "bytes": 463
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Input\\InputFrameComponent.h",
+      "bytes": 1550
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Interaction\\InteractionComponent.cpp",
+      "bytes": 2855
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Interaction\\InteractionComponent.h",
+      "bytes": 2218
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Inventory\\InventoryComponent.cpp",
+      "bytes": 1612
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Inventory\\InventoryComponent.h",
+      "bytes": 1824
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Progression\\ProgressionComponent.cpp",
+      "bytes": 917
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Progression\\ProgressionComponent.h",
+      "bytes": 1778
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Tests\\SAOMMOBootTests.cpp",
+      "bytes": 2244
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Tests\\SAOMMOCheckpointTests.cpp",
+      "bytes": 2659
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Tests\\SAOMMOCombatTests.cpp",
+      "bytes": 3514
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Tests\\SAOMMOEnemySpawnerTests.cpp",
+      "bytes": 5391
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Tests\\SAOMMOInventoryTests.cpp",
+      "bytes": 7695
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Tests\\SAOMMOKillRewardTests.cpp",
+      "bytes": 9606
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Tests\\SAOMMOSaveTests.cpp",
+      "bytes": 8924
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Tests\\SAOMMOTestWorld.h",
+      "bytes": 1102
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Tests\\SAOMMOVRInputTests.cpp",
+      "bytes": 9947
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\UI\\DeathScreenWidget.cpp",
+      "bytes": 2555
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\UI\\DeathScreenWidget.h",
+      "bytes": 1223
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\UI\\PlayerHudWidget.cpp",
+      "bytes": 8007
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\UI\\PlayerHudWidget.h",
+      "bytes": 2090
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\UI\\SAOCharacterCreatorWidget.cpp",
+      "bytes": 16234
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\UI\\SAOCharacterCreatorWidget.h",
+      "bytes": 4522
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\CombatCharacter.cpp",
+      "bytes": 16095
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\CombatCharacter.h",
+      "bytes": 11884
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\CombatGameMode.cpp",
+      "bytes": 1484
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\CombatGameMode.h",
+      "bytes": 936
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\CombatPlayerController.cpp",
+      "bytes": 2691
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\CombatPlayerController.h",
+      "bytes": 2233
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Platforming\\PlatformingCharacter.cpp",
+      "bytes": 10697
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Platforming\\PlatformingCharacter.h",
+      "bytes": 6127
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Platforming\\PlatformingGameMode.cpp",
+      "bytes": 1514
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Platforming\\PlatformingGameMode.h",
+      "bytes": 948
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Platforming\\PlatformingPlayerController.cpp",
+      "bytes": 2843
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Platforming\\PlatformingPlayerController.h",
+      "bytes": 2010
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_SideScrolling\\SideScrollingCameraManager.cpp",
+      "bytes": 3129
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_SideScrolling\\SideScrollingCameraManager.h",
+      "bytes": 1569
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_SideScrolling\\SideScrollingCharacter.cpp",
+      "bytes": 10425
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_SideScrolling\\SideScrollingCharacter.h",
+      "bytes": 5885
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_SideScrolling\\SideScrollingGameMode.cpp",
+      "bytes": 2153
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_SideScrolling\\SideScrollingGameMode.h",
+      "bytes": 1529
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_SideScrolling\\SideScrollingPlayerController.cpp",
+      "bytes": 2843
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_SideScrolling\\SideScrollingPlayerController.h",
+      "bytes": 2042
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\VR\\VRCharacter.cpp",
+      "bytes": 12017
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\VR\\VRCharacter.h",
+      "bytes": 7218
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\World\\Checkpoint.cpp",
+      "bytes": 2730
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\World\\Checkpoint.h",
+      "bytes": 1505
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\World\\FloatingCombatText.cpp",
+      "bytes": 984
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\World\\FloatingCombatText.h",
+      "bytes": 1250
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\World\\GameWorldSubsystem.cpp",
+      "bytes": 1005
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\World\\GameWorldSubsystem.h",
+      "bytes": 1689
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\World\\ItemPickup.cpp",
+      "bytes": 2950
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\World\\ItemPickup.h",
+      "bytes": 1990
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\AI\\CombatAIController.cpp",
+      "bytes": 754
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\AI\\CombatAIController.h",
+      "bytes": 693
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\AI\\CombatEnemy.cpp",
+      "bytes": 9805
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\AI\\CombatEnemy.h",
+      "bytes": 8063
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\AI\\CombatEnemySpawner.cpp",
+      "bytes": 3555
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\AI\\CombatEnemySpawner.h",
+      "bytes": 3672
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\AI\\CombatStateTreeUtility.cpp",
+      "bytes": 11900
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\AI\\CombatStateTreeUtility.h",
+      "bytes": 15061
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\AI\\EnvQueryContext_Danger.cpp",
+      "bytes": 662
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\AI\\EnvQueryContext_Danger.h",
+      "bytes": 599
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\AI\\EnvQueryContext_Player.cpp",
+      "bytes": 667
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\AI\\EnvQueryContext_Player.h",
+      "bytes": 585
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\Animation\\AnimNotify_CheckChargedAttack.cpp",
+      "bytes": 712
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\Animation\\AnimNotify_CheckChargedAttack.h",
+      "bytes": 649
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\Animation\\AnimNotify_CheckCombo.cpp",
+      "bytes": 669
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\Animation\\AnimNotify_CheckCombo.h",
+      "bytes": 626
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\Animation\\AnimNotify_DoAttackTrace.cpp",
+      "bytes": 643
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\Animation\\AnimNotify_DoAttackTrace.h",
+      "bytes": 808
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\Gameplay\\CombatActivationVolume.cpp",
+      "bytes": 1498
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\Gameplay\\CombatActivationVolume.h",
+      "bytes": 1040
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\Gameplay\\CombatCheckpointVolume.cpp",
+      "bytes": 1250
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\Gameplay\\CombatCheckpointVolume.h",
+      "bytes": 795
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\Gameplay\\CombatDamageableBox.cpp",
+      "bytes": 2175
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\Gameplay\\CombatDamageableBox.h",
+      "bytes": 2195
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\Gameplay\\CombatDummy.cpp",
+      "bytes": 1593
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\Gameplay\\CombatDummy.h",
+      "bytes": 2054
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\Gameplay\\CombatLavaFloor.cpp",
+      "bytes": 889
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\Gameplay\\CombatLavaFloor.h",
+      "bytes": 981
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\Interfaces\\CombatActivatable.cpp",
+      "bytes": 86
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\Interfaces\\CombatActivatable.h",
+      "bytes": 980
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\Interfaces\\CombatAttacker.cpp",
+      "bytes": 85
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\Interfaces\\CombatAttacker.h",
+      "bytes": 1061
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\Interfaces\\CombatDamageable.cpp",
+      "bytes": 187
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\Interfaces\\CombatDamageable.h",
+      "bytes": 1286
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\UI\\CombatLifeBar.cpp",
+      "bytes": 86
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Combat\\UI\\CombatLifeBar.h",
+      "bytes": 620
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Platforming\\Animation\\AnimNotify_EndDash.cpp",
+      "bytes": 661
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_Platforming\\Animation\\AnimNotify_EndDash.h",
+      "bytes": 643
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_SideScrolling\\AI\\SideScrollingAIController.cpp",
+      "bytes": 616
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_SideScrolling\\AI\\SideScrollingAIController.h",
+      "bytes": 613
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_SideScrolling\\AI\\SideScrollingNPC.cpp",
+      "bytes": 1383
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_SideScrolling\\AI\\SideScrollingNPC.h",
+      "bytes": 1813
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_SideScrolling\\AI\\SideScrollingStateTreeUtility.cpp",
+      "bytes": 2191
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_SideScrolling\\AI\\SideScrollingStateTreeUtility.h",
+      "bytes": 2132
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_SideScrolling\\Gameplay\\SideScrollingJumpPad.cpp",
+      "bytes": 1546
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_SideScrolling\\Gameplay\\SideScrollingJumpPad.h",
+      "bytes": 907
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_SideScrolling\\Gameplay\\SideScrollingMovingPlatform.cpp",
+      "bytes": 820
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_SideScrolling\\Gameplay\\SideScrollingMovingPlatform.h",
+      "bytes": 1874
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_SideScrolling\\Gameplay\\SideScrollingPickup.cpp",
+      "bytes": 1713
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_SideScrolling\\Gameplay\\SideScrollingPickup.h",
+      "bytes": 928
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_SideScrolling\\Gameplay\\SideScrollingSoftPlatform.cpp",
+      "bytes": 2206
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_SideScrolling\\Gameplay\\SideScrollingSoftPlatform.h",
+      "bytes": 1530
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_SideScrolling\\Interfaces\\SideScrollingInteractable.cpp",
+      "bytes": 192
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_SideScrolling\\Interfaces\\SideScrollingInteractable.h",
+      "bytes": 677
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_SideScrolling\\UI\\SideScrollingUI.cpp",
+      "bytes": 88
+    },
+    {
+      "pfad": "C:\\Users\\S-LASA~1\\AppData\\Local\\Temp\\opencode\\help-me-build-SAOMMO\\SAOMMOnew\\Source\\SAOMMOnew\\Variant_SideScrolling\\UI\\SideScrollingUI.h",
+      "bytes": 500
+    }
+  ]
+}
