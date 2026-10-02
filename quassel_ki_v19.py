@@ -302,7 +302,7 @@ AGENT_TOOLS = ("datei_lesen(datei), ordner_auflisten(ordner), projekt_suchen(), 
     "actor_erstellen_tool(ordner, klasse), ue_plugin_installieren(projekt, name), "
     "git_status(ordner), git_diff(ordner, datei), git_commit(ordner, nachricht), doku_suchen(thema), "
     "projekt_geruest(projekt_ordner, spielname), klassen_batch(ordner, klassen), asset_struktur(projekt_ordner), "
-    "tasks_status(spiel), task_check(spiel, nr), git_branch(ordner, name), cpp_check(datei), "
+    "tasks_status(spiel), task_check(spiel, nr), tasks_json_schreiben(spiel, tasks), git_branch(ordner, name), cpp_check(datei), "
     "log_analyse(projekt_ordner), impact_check(ordner, klasse), doku_update(spiel, eintrag), "
     "bildschirm_foto(), bildschirm_sehen(frage), maus_position(), system_info(), tipp_ziehen()")
 LESE_TOOLS = {"system_info", "projekt_suchen", "datei_lesen", "actor_vorschau", "tipp_ziehen",
@@ -368,10 +368,10 @@ def chat_erinnerung_speichern(frage, antwort):
 
 # ---------- v18: quassel-Paket (Hardware, Router, Memory 2.0, Konfig) ----------
 try:
-    from quassel import hardware as HW, konfig as KONF, memory2 as MEM2, modelle as ROUTER, projekte as PROJ
+    from quassel import hardware as HW, konfig as KONF, memory2 as MEM2, modelle as ROUTER, projekte as PROJ, schmiede as SCH
     _HAT_QUASSEL_PAKET = True
 except Exception:
-    HW = KONF = MEM2 = ROUTER = PROJ = None
+    HW = KONF = MEM2 = ROUTER = PROJ = SCH = None
     _HAT_QUASSEL_PAKET = False
 try:
     QCFG = KONF.laden(str(WORKSPACE / "quassel-ki" / "quassel.yaml")) if _HAT_QUASSEL_PAKET else {}
@@ -879,6 +879,9 @@ class MCPClient:
                 if tname == "tasks_status":
                     o = _spiel_ordner()
                     if not o: return "Spielordner unbekannt/außerhalb (spiel: Name oder Pfad)."
+                    if _HAT_QUASSEL_PAKET and (o / "tasks.json").exists():
+                        obj = SCH.lesen(str(o / "tasks.json"))
+                        if obj: return SCH.status_text(obj)
                     t = tasks_lesen(o)
                     if not t: return "Keine tasks.md – erst Schmiede laufen lassen."
                     gesamt = len(t["offen"]) + t["fertig"]
@@ -887,6 +890,22 @@ class MCPClient:
                 if tname == "task_check":
                     o = _spiel_ordner()
                     if not o: return "Spielordner unbekannt/außerhalb."
+                    ref = str(args.get("nr", args.get("id", ""))).strip().upper()
+                    if _HAT_QUASSEL_PAKET and (o / "tasks.json").exists():
+                        obj = SCH.lesen(str(o / "tasks.json"))
+                        if not obj: return "tasks.json kaputt."
+                        offene = [t for t in obj["tasks"] if t.get("status") != "fertig"]
+                        ziel = None
+                        for t in obj["tasks"]:
+                            if t.get("id", "").upper() == ref:
+                                ziel = t; break
+                        if not ziel and ref.isdigit() and 1 <= int(ref) <= len(offene):
+                            ziel = offene[int(ref) - 1]
+                        if not ziel: return f"Task {ref} nicht gefunden (ID wie T001 oder Nummer)."
+                        ziel["status"] = "fertig"
+                        ok, fehler = SCH.schreiben(str(o / "tasks.json"), obj["tasks"], obj.get("spiel", ""), obj.get("idee", ""))
+                        if not ok: return "Schreibfehler: " + "; ".join(fehler)
+                        return f"Erledigt: {ziel['id']} {ziel.get('ziel','')[:80]}"
                     t = tasks_lesen(o)
                     if not t: return "Keine tasks.md."
                     try: nr = int(args.get("nr", 0))
@@ -896,6 +915,26 @@ class MCPClient:
                     zl = t["zeilen"]; zl[idx] = zl[idx].replace("- [ ]", "- [x]", 1)
                     t["pfad"].write_text("\n".join(zl), encoding="utf-8")
                     return f"Erledigt: {txt}"
+                if tname == "tasks_json_schreiben":
+                    o = _spiel_ordner()
+                    if not o: return "Spielordner unbekannt/außerhalb (spiel: Name oder Pfad)."
+                    if not _HAT_QUASSEL_PAKET: return "Schmiede-Modul fehlt."
+                    roh = args.get("tasks", [])
+                    if isinstance(roh, str):
+                        try: roh = json.loads(roh)
+                        except Exception: return "tasks muss Liste oder JSON-Liste sein."
+                    if not isinstance(roh, list) or not roh: return "Keine Aufgaben übergeben."
+                    gebaut = []
+                    for i, r in enumerate(roh[:30], 1):
+                        if isinstance(r, str): r = {"ziel": r}
+                        if not isinstance(r, dict) or not str(r.get("ziel", "")).strip(): continue
+                        gebaut.append(SCH.task_bauen(i, r.get("ziel"), r.get("akzeptanz"), r.get("dateien"),
+                                                     r.get("systeme"), r.get("abhaengig_von"), r.get("risiko"),
+                                                     r.get("testschritte"), r.get("status", "offen"), r.get("annahmen")))
+                    ok, fehler = SCH.schreiben(str(o / "tasks.json"), gebaut, str(args.get("spiel") or ""), "")
+                    if not ok: return "Validierung: " + "; ".join(fehler)
+                    ctx["pc"].aktion_loggen(f"tasks_json in {o}: {len(gebaut)} Tasks")
+                    return f"tasks.json: {len(gebaut)} strukturierte Aufgaben in {o}."
                 if tname in ("git_branch", "git_branches"):
                     repo = git_repo_suchen(args.get("ordner") or ((ctx.get("projekt").parent if ctx.get("projekt") else None) or WORKSPACE))
                     if not repo: return "Kein Git-Repo gefunden."

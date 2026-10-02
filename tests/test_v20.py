@@ -9,7 +9,7 @@ SYS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if SYS not in sys.path:
     sys.path.insert(0, SYS)
 
-from quassel import hardware as HW, konfig as KONF, modelle as R, memory2 as M2
+from quassel import hardware as HW, konfig as KONF, modelle as R, memory2 as M2, schmiede as S
 
 
 def profil_mit(vram, ram=32, gpu_namen=("Test GPU",)):
@@ -149,6 +149,57 @@ class MemoryPhase3Test(unittest.TestCase):
         self.assertEqual(n, 1)
         self.assertTrue(os.path.exists(os.path.join(basis, "archiv", "alt.json")))
         self.assertTrue(os.path.exists(neu))
+
+
+class SchmiedePhase5Test(unittest.TestCase):
+    def test_task_vollstaendig(self):
+        t = S.task_bauen(1, "HealthComponent in C++ schreiben",
+                         akzeptanz=["Heilt 25 HP"], dateien=["HealthComponent.h"],
+                         testschritte=["PIE starten, Pickup einsammeln"])
+        self.assertEqual(t["id"], "T001")
+        self.assertEqual(t["kategorie"], "cpp")
+        self.assertEqual(t["status"], "offen")
+        self.assertEqual(t["akzeptanz"], ["Heilt 25 HP"])
+        self.assertEqual(S.validieren([t]), [])
+
+    def test_kategorien(self):
+        self.assertEqual(S.kategorie("HUD Widget in UMG bauen"), "blueprint")
+        self.assertEqual(S.kategorie("Lobby mit Server und RPC"), "multiplayer")
+        self.assertEqual(S.kategorie("FPS optimieren und profilen"), "performance")
+        self.assertEqual(S.kategorie("Irgendwas mit Katze"), "sonst")
+
+    def test_validierung_findet_fehler(self):
+        f = S.validieren([{"id": "T001", "ziel": "", "risiko": "extrem", "status": "vielleicht"}])
+        self.assertGreaterEqual(len(f), 3)
+
+    def test_zerlegen_kette(self):
+        ts = S.zerlegen("Inventar anlegen und speichern und HUD anzeigen")
+        self.assertGreaterEqual(len(ts), 3)
+        self.assertEqual(ts[1]["abhaengig_von"], [ts[0]["id"]])
+        self.assertEqual(S.validieren(ts), [])
+
+    def test_markdown_import(self):
+        md = "- [ ] Save System implementieren\n- [x] GDD schreiben\n- Kein Task hier\n"
+        ts = S.aus_markdown(md)
+        self.assertEqual(len(ts), 2)
+        self.assertEqual(ts[0]["id"], "T001")
+        self.assertEqual(ts[1]["status"], "fertig")
+        self.assertEqual(S.validieren(ts), [])
+
+    def test_schreiben_lesen_status(self):
+        import json as _j
+        d = tempfile.mkdtemp()
+        p = os.path.join(d, "tasks.json")
+        ts = [S.task_bauen(1, "Speichern in SaveGame"), S.task_bauen(2, "Lobby bauen")]
+        ok, fehler = S.schreiben(p, ts, spiel="Demo")
+        self.assertTrue(ok, fehler)
+        obj = S.lesen(p)
+        self.assertEqual(obj["spiel"], "Demo")
+        self.assertIn("T001", S.status_text(obj))
+        # kaputtes Schreiben wird abgelehnt
+        ok2, f2 = S.schreiben(p, [{"id": "T001", "ziel": "", "risiko": "x", "status": "y"}])
+        self.assertFalse(ok2)
+        self.assertTrue(f2)
 
 
 if __name__ == "__main__":
