@@ -87,6 +87,113 @@ def _engine_version(projekt_pfad):
     return "", ""
 
 
+# Phase 4: echter Unreal-Scanner. Alles per Datei lesen; kaputte Dateien werden
+# als Fehler vermerkt, brechen aber nie den Scan ab. Blueprints/.uasset sind
+# binär -> ehrlich nur Pfade (Inhalt braucht den Editor).
+_UNREAL_CODE_EXTS = {".h", ".cpp"}
+_UNREAL_ASSET_EXTS = {".uasset", ".umap", ".uplugin"}
+
+
+def _unreal_klassen_aus_header(text):
+    klassen = []
+    try:
+        for m in re.finditer(r"UCLASS\s*\([^)]*\)\s*class\s+\w+\s+(\w+)", text):
+            klassen.append({"name": m.group(1), "art": "UCLASS"})
+        for m in re.finditer(r"USTRUCT\s*\([^)]*\)\s*(?:struct|class)\s+(\w+)", text):
+            klassen.append({"name": m.group(1), "art": "USTRUCT"})
+        for m in re.finditer(r"UENUM\s*\([^)]*\)\s*enum\s+(?:class\s+)?(\w+)", text):
+            klassen.append({"name": m.group(1), "art": "UENUM"})
+    except Exception:
+        pass
+    return klassen
+
+
+def unreal_details(ordner):
+    """Vertiefter Unreal-Scan. Gibt {module, plugins, configs, maps, klassen,
+    blueprints, assets, fehler}. Jede Datei einzeln abgesichert."""
+    root = Path(ordner)
+    det = {"module": [], "plugins": [], "configs": [], "maps": [],
+           "klassen": [], "blueprints": [], "assets": {}, "fehler": []}
+
+    def _fehler_merken(pfad, fehler):
+        if len(det["fehler"]) < 20:
+            det["fehler"].append({"datei": str(pfad), "fehler": str(fehler)[:150]})
+
+    try:
+        src = root / "Source"
+        if src.is_dir():
+            for mod in sorted(src.iterdir()):
+                if not mod.is_dir():
+                    continue
+                try:
+                    build = next(mod.glob("*.Build.cs"), None)
+                    h_zahl = sum(1 for _ in mod.glob("*.h"))
+                    cpp_zahl = sum(1 for _ in mod.glob("*.cpp"))
+                    det["module"].append({"name": mod.name, "build_cs": bool(build),
+                                          "header": h_zahl, "cpp": cpp_zahl})
+                except Exception as e:
+                    _fehler_merken(mod, e)
+    except Exception as e:
+        _fehler_merken("Source/", e)
+
+    for verzeichnis, schluessel, muster in (
+            ("Plugins", "plugins", "*.uplugin"), ("Config", "configs", "*.ini")):
+        try:
+            basis = root / verzeichnis
+            if basis.is_dir():
+                for f in sorted(basis.rglob(muster)):
+                    try:
+                        det[schluessel].append(str(f.relative_to(root)))
+                    except Exception as e:
+                        _fehler_merken(f, e)
+        except Exception as e:
+            _fehler_merken(verzeichnis, e)
+
+    try:
+        content = root / "Content"
+        if content.is_dir():
+            asset_zaehlung = {}
+            for f in content.rglob("*"):
+                try:
+                    if not f.is_file():
+                        continue
+                    ext = f.suffix.lower()
+                    if ext == ".umap":
+                        det["maps"].append(str(f.relative_to(root)))
+                    elif ext == ".uasset":
+                        # Binär: nur Pfad + Größe, Inhalt braucht den Editor
+                        det["blueprints"].append({"pfad": str(f.relative_to(root)),
+                                                  "bytes": f.stat().st_size})
+                    if ext:
+                        asset_zaehlung[ext] = asset_zaehlung.get(ext, 0) + 1
+                except Exception as e:
+                    _fehler_merken(f, e)
+            det["assets"] = asset_zaehlung
+    except Exception as e:
+        _fehler_merken("Content/", e)
+
+    try:
+        src = root / "Source"
+        if src.is_dir():
+            for h in src.rglob("*.h"):
+                try:
+                    if h.stat().st_size > 500000:
+                        continue
+                    text = h.read_text(encoding="utf-8", errors="replace")
+                    for k in _unreal_klassen_aus_header(text):
+                        k["datei"] = str(h.relative_to(root))
+                        det["klassen"].append(k)
+                        if len(det["klassen"]) >= 300:
+                            break
+                except Exception as e:
+                    _fehler_merken(h, e)
+                if len(det["klassen"]) >= 300:
+                    break
+    except Exception as e:
+        _fehler_merken("Source/*.h", e)
+    return det
+
+
 def _dokus(ordner):
     gefunden = {}
     try:
@@ -204,7 +311,14 @@ def projekt_analysieren(ordner):
     tasks += _tasks_aus_code(ordner)
     regeln = [n for n in dokus if n.upper() in ("AGENTS.MD", "QUASSEL.MD", "PROJECT_RULES.MD", "RULES.MD", "CLAUDE.MD", "GEMINI.MD")]
     wichtige = [n for n in ("README.md", "ROADMAP.md", "TODO.md", "TASKS.md") if n in dokus]
+    details = {}
+    if typ == "unreal":
+        try:
+            details = unreal_details(ordner)
+        except Exception as e:
+            details = {"fehler": [{"datei": ".", "fehler": str(e)[:150]}]}
     return {
+        "schema": 2,  # versionierter Index (Phase 4)
         "name": Path(ordner).name,
         "pfad": ordner,
         "typ": typ or "unbekannt",
@@ -216,6 +330,7 @@ def projekt_analysieren(ordner):
         "dokus": sorted(dokus),
         "regeln": regeln,
         "wichtige_dokus": wichtige,
+        "unreal": details,
         "tasks": sorted(tasks, key=lambda t: (-t["confidence"], t["risk"])),
     }
 

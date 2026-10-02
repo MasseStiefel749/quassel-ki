@@ -28,6 +28,18 @@ def baum_anlegen():
     (ue / "AGENTS.md").write_text("Use C++ where possible.\n", encoding="utf-8")
     (ue / "Source" / "Held.cpp").write_text(
         "// TODO: Sprunghöhe anpassen\n// FIXME: Crash bei Null-Pointer\nint x = 1;\n", encoding="utf-8")
+    (ue / "Source" / "MeinSpiel").mkdir()
+    (ue / "Source" / "MeinSpiel" / "MeinSpiel.Build.cs").write_text("// build\n", encoding="utf-8")
+    (ue / "Source" / "MeinSpiel" / "HeldBase.h").write_text(
+        "#pragma once\n#include \"CoreMinimal.h\"\n#include \"HeldBase.generated.h\"\n"
+        "UCLASS()\nclass MEINSPIEL_API AHeldBase : public ACharacter\n{\n\tGENERATED_BODY()\n};\n"
+        "USTRUCT(BlueprintType)\nstruct FInventarSlot\n{\n\tGENERATED_BODY()\n};\n", encoding="utf-8")
+    (ue / "Plugins" / "VRPlugin").mkdir(parents=True)
+    (ue / "Plugins" / "VRPlugin" / "VRPlugin.uplugin").write_text('{"Version": 1}', encoding="utf-8")
+    (ue / "Config" / "DefaultEngine.ini").write_text("[/Script/EngineSettings]\n", encoding="utf-8")
+    (ue / "Content" / "Maps").mkdir(parents=True)
+    (ue / "Content" / "Maps" / "Start.umap").write_bytes(b"\x00\x01fakemap")
+    (ue / "Content" / "BP_Held.uasset").write_bytes(b"\x00\x01fakeasset")
     (ue / ".git").mkdir()
     # Python-Projekt
     py = root / "tool"
@@ -108,6 +120,45 @@ class ScannerTest(unittest.TestCase):
         self.assertEqual(P._risiko_einschaetzen("Alte Dateien löschen und aufräumen"), "CRITICAL")
         self.assertEqual(P._risiko_einschaetzen("Netzwerk-Replikation umbauen"), "HIGH")
         self.assertEqual(P._risiko_einschaetzen("Doku aktualisieren"), "LOW")
+
+
+class UnrealDetailsTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.root = baum_anlegen()
+        cls.idx = P.projekt_analysieren(str(cls.root / "MeinSpiel"))
+
+    def test_schema_version(self):
+        self.assertEqual(self.idx.get("schema"), 2)
+
+    def test_modul(self):
+        module = {m["name"]: m for m in self.idx["unreal"]["module"]}
+        self.assertIn("MeinSpiel", module)
+        self.assertTrue(module["MeinSpiel"]["build_cs"])
+
+    def test_plugin_config_map(self):
+        self.assertTrue(any("VRPlugin.uplugin" in p for p in self.idx["unreal"]["plugins"]))
+        self.assertTrue(any("DefaultEngine.ini" in c for c in self.idx["unreal"]["configs"]))
+        self.assertTrue(any("Start.umap" in m for m in self.idx["unreal"]["maps"]))
+
+    def test_klassen_geparst(self):
+        namen = {(k["name"], k["art"]) for k in self.idx["unreal"]["klassen"]}
+        self.assertIn(("AHeldBase", "UCLASS"), namen)
+        self.assertIn(("FInventarSlot", "USTRUCT"), namen)
+
+    def test_blueprint_nur_pfad(self):
+        bps = self.idx["unreal"]["blueprints"]
+        self.assertTrue(any("BP_Held.uasset" in b["pfad"] for b in bps))
+        self.assertTrue(all("bytes" in b for b in bps))  # kein erfundener Inhalt
+
+    def test_kaputte_datei_bricht_nicht_ab(self):
+        kaputt = self.root / "MeinSpiel" / "Kaputt.uproject"
+        kaputt.write_bytes(b"\xff\xfe kein json \x00")
+        try:
+            idx = P.projekt_analysieren(str(self.root / "MeinSpiel"))
+            self.assertEqual(idx["typ"], "unreal")  # Scan überlebt
+        finally:
+            kaputt.unlink()
 
 
 if __name__ == "__main__":
