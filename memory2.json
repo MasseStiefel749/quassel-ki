@@ -1,3 +1,18 @@
 {
- "eintraege": []
+ "eintraege": [
+  {
+   "type": "lesson",
+   "content": "Projekt Default Project in C:\\Users\\S-Lasarzewski\\Documents\\Default Project. Aufgabe (Fundstelle quassel-ki\\quassel\\projekte.py:22): DOKU_DATEIEN = [\" -> Wenn du aufgefordert wirst, in einem bestimmten Projektordner zu arbeiten, achte darauf, dass du dich in diesem Ordner befindest, bevor du mit der Arbeit beginnst. Andernfalls könnten deine Änderungen nicht im richtigen Projekt gespeichert werden",
+   "source": "agent-feedback",
+   "confidence": 0.6,
+   "created": "2026-10-02T12:01:26"
+  },
+  {
+   "type": "lesson",
+   "content": "Projekt Default Project in C:\\Users\\S-Lasarzewski\\Documents\\Default Project. Aufgabe (Fundstelle quassel-ki\\quassel\\projekte.py:22): DOKU_DATEIEN = [\" -> Beim nächsten Mal: Ehrlich über Misserfolge berichten und die Projektregeln genau beachten. Die Agent-Arbeit hat gezeigt, dass die Projektregeln nicht eingehalten wurden, da Dateien außerhalb des erlaubten Ordners bearbeitet wurden. Die Agent sol",
+   "source": "agent-feedback",
+   "confidence": 0.6,
+   "created": "2026-10-02T12:43:39"
+  }
+ ]
 }

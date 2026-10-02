@@ -1,0 +1,7 @@
+[
+ {
+  "frage": "[Bildschirmbeschreibung per Vision: \nThe image shows a computer screen with a dark background, displaying a window with a black and white interface. The window is divided into two sections, with the left section containing a menu bar and the right section featuring a file explorer window. The window",
+  "antwort": "[Verbindung zu Ollama fehlgeschlagen: name 'data' is not defined -> Offline-Modus]",
+  "zeit": "2026-10-02T11:48"
+ }
+]
