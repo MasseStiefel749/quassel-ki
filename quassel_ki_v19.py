@@ -1369,6 +1369,8 @@ class QuasselKI:
         self._gen_id = 0  # Antwort-Stopp: alte Generationen werden verworfen
         self._gen_start = 0.0
         self._agent_stop = False
+        self._auftrag_stand = None  # Phase 8: Retry-Tracking pro Find&Finish-Task
+        self._letzter_selfcheck = "UNKNOWN"
         self._god_an = False
         self._main_id = threading.get_ident()  # Tk-Dispatcher braucht die Main-Thread-ID
         self.anhaenge = []  # Liste von Path-Strings, landen beim nächsten Prompt im Kontext
@@ -2245,9 +2247,7 @@ class QuasselKI:
         if an:
             if self._generating:
                 self.finish_var.set(False); self.bot_sagt("Erst läuft noch was – danach 🚀 nochmal."); return
-        self._agent_stop = False
-        self._auftrag_stand = None  # Phase 8: Retry-Tracking pro Find&Finish-Task
-        self._letzter_selfcheck = "UNKNOWN"
+            self._agent_stop = False
             self.log("sys", "🚀 FIND & FINISH an: nur sichere Tasks (Confidence hoch, Risiko LOW/MEDIUM), Git-Checkpoint pro Task.")
             threading.Thread(target=self._finish_loop, daemon=True).start()
         else:
