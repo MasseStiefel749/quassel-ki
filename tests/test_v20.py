@@ -9,7 +9,7 @@ SYS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if SYS not in sys.path:
     sys.path.insert(0, SYS)
 
-from quassel import hardware as HW, konfig as KONF, modelle as R, memory2 as M2, schmiede as S
+from quassel import hardware as HW, konfig as KONF, modelle as R, memory2 as M2, schmiede as S, buildtest as B
 
 
 def profil_mit(vram, ram=32, gpu_namen=("Test GPU",)):
@@ -200,6 +200,60 @@ class SchmiedePhase5Test(unittest.TestCase):
         ok2, f2 = S.schreiben(p, [{"id": "T001", "ziel": "", "risiko": "x", "status": "y"}])
         self.assertFalse(ok2)
         self.assertTrue(f2)
+
+
+class BuildTestPhase6Test(unittest.TestCase):
+    def test_unbekannte_art(self):
+        ok, grund = B.befehl_bauen("rakete", "x")
+        self.assertFalse(ok)
+
+    def test_blockliste(self):
+        ok, grund = B.befehl_bauen("python_skript", "x.py; rm -rf /")
+        self.assertFalse(ok)
+
+    def test_kein_shell_string(self):
+        ok, befehl = B.befehl_bauen("python_test", ".")
+        self.assertTrue(ok)
+        self.assertIsInstance(befehl, list)  # shell=False, kein String
+
+    def test_ue_ohne_installation_ehrlich(self):
+        ok, grund = B.befehl_bauen("ue_build", "spiel.uproject", engine_pfad="C:/gibts_nicht_xyz")
+        # Egal ob gefunden oder nicht: Antwort ist ehrlich formuliert
+        if not ok:
+            self.assertIn("nicht", grund.lower())
+
+    def test_analyse_include(self):
+        a = B.analysieren("fatal error C1083: Cannot open include file: 'Held.h'")
+        self.assertTrue(a["fehler"])
+        self.assertIn("Header", a["ursache"])
+        self.assertTrue(a["schritte"])
+
+    def test_analyse_leer(self):
+        a = B.analysieren("Alles ok, 3 passed")
+        self.assertEqual(a["fehler"], [])
+        self.assertTrue(a["schritte"])
+
+    def test_echter_lauf_python(self):
+        import tempfile as _t
+        d = _t.mkdtemp()
+        skript = os.path.join(d, "ok_test.py")
+        with open(skript, "w", encoding="utf-8") as f:
+            f.write("print('läuft')\n")
+        erg = B.lauf("python_skript", skript, cwd=d, timeout=60, log_ordner=os.path.join(d, "logs"))
+        self.assertTrue(erg["ok"], erg)
+        self.assertTrue(os.path.exists(erg["log"]))
+        self.assertIn("Nächste Schritte", B.bericht(erg))
+
+    def test_echter_lauf_fehler(self):
+        import tempfile as _t
+        d = _t.mkdtemp()
+        skript = os.path.join(d, "kaputt_test.py")
+        with open(skript, "w", encoding="utf-8") as f:
+            f.write("import nicht_da_xyz\n")
+        erg = B.lauf("python_skript", skript, cwd=d, timeout=60, log_ordner=os.path.join(d, "logs"))
+        self.assertFalse(erg["ok"])
+        self.assertTrue(erg["analyse"]["fehler"])
+        self.assertIn("Paket", erg["analyse"]["ursache"])
 
 
 if __name__ == "__main__":

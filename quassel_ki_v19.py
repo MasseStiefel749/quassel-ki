@@ -303,7 +303,7 @@ AGENT_TOOLS = ("datei_lesen(datei), ordner_auflisten(ordner), projekt_suchen(), 
     "git_status(ordner), git_diff(ordner, datei), git_commit(ordner, nachricht), doku_suchen(thema), "
     "projekt_geruest(projekt_ordner, spielname), klassen_batch(ordner, klassen), asset_struktur(projekt_ordner), "
     "tasks_status(spiel), task_check(spiel, nr), tasks_json_schreiben(spiel, tasks), git_branch(ordner, name), cpp_check(datei), "
-    "log_analyse(projekt_ordner), impact_check(ordner, klasse), doku_update(spiel, eintrag), "
+    "log_analyse(projekt_ordner), test_lauf(art, ziel), impact_check(ordner, klasse), doku_update(spiel, eintrag), "
     "bildschirm_foto(), bildschirm_sehen(frage), maus_position(), system_info(), tipp_ziehen()")
 LESE_TOOLS = {"system_info", "projekt_suchen", "datei_lesen", "actor_vorschau", "tipp_ziehen",
               "bildschirm_foto", "bildschirm_sehen", "maus_position", "projekt_index", "ordner_auflisten",
@@ -368,10 +368,10 @@ def chat_erinnerung_speichern(frage, antwort):
 
 # ---------- v18: quassel-Paket (Hardware, Router, Memory 2.0, Konfig) ----------
 try:
-    from quassel import hardware as HW, konfig as KONF, memory2 as MEM2, modelle as ROUTER, projekte as PROJ, schmiede as SCH
+    from quassel import hardware as HW, konfig as KONF, memory2 as MEM2, modelle as ROUTER, projekte as PROJ, schmiede as SCH, buildtest as BTEST
     _HAT_QUASSEL_PAKET = True
 except Exception:
-    HW = KONF = MEM2 = ROUTER = PROJ = SCH = None
+    HW = KONF = MEM2 = ROUTER = PROJ = SCH = BTEST = None
     _HAT_QUASSEL_PAKET = False
 try:
     QCFG = KONF.laden(str(WORKSPACE / "quassel-ki" / "quassel.yaml")) if _HAT_QUASSEL_PAKET else {}
@@ -970,12 +970,34 @@ class MCPClient:
                     logs = sorted((basis / "Saved" / "Logs").glob("*.log")) if basis else []
                     if not logs: return "Keine Logs (Saved/Logs fehlt – schon mal in UE gespielt?)."
                     try:
-                        text = logs[-1].read_text(encoding="utf-8", errors="replace").splitlines()
+                        roh = logs[-1].read_text(encoding="utf-8", errors="replace")
+                        text = roh.splitlines()
                         treffer = [z.strip()[:220] for z in text if re.search(r"Error|Fatal|Exception|Access violation|Ensure|Failed", z)]
                         aus = treffer[-25:] or ["(keine Fehler im Log – läuft!)"]
-                        return f"Log: {logs[-1].name}\n" + "\n".join(aus) + "\nTipp: Bei Crash 'crash-debug'-Skill fragen."
+                        erg = f"Log: {logs[-1].name}\n" + "\n".join(aus)
+                        if _HAT_QUASSEL_PAKET:  # Phase 6: konkrete nächste Schritte statt nur Text
+                            a = BTEST.analysieren(roh[-30000:])
+                            erg += f"\nUrsache (Heuristik): {a['ursache']}\nNächste Schritte:\n" + "\n".join(f"→ {s}" for s in a["schritte"])
+                        else:
+                            erg += "\nTipp: Bei Crash 'crash-debug'-Skill fragen."
+                        return erg
                     except Exception as e:
                         return f"Fehler: {e}"
+                if tname == "test_lauf":
+                    # Phase 6: Build/Test-Adapter. Ausführung fragt über Permit (nicht in LESE_TOOLS).
+                    if not _HAT_QUASSEL_PAKET: return "Build-Modul fehlt."
+                    art = str(args.get("art", "python_test"))
+                    ziel = str(args.get("ziel", ""))
+                    zb = Path(ziel) if ziel else WORKSPACE
+                    if not ctx["pc"]._im_erlaubten_bereich(zb): return "Pfad außerhalb der erlaubten Ordner – abgelehnt."
+                    try:
+                        erg = BTEST.lauf(art, ziel or str(zb), cwd=str(zb if zb.is_dir() else zb.parent),
+                                         timeout=int(args.get("timeout", 300) or 300),
+                                         log_ordner=str(WORKSPACE / "quassel-ki" / "logs"))
+                    except Exception as e:
+                        return f"Fehler: {e}"
+                    ctx["pc"].aktion_loggen(f"test_lauf {art} {ziel} -> {'OK' if erg.get('ok') else 'FEHLER'}")
+                    return BTEST.bericht(erg)[:4000]
                 if tname == "impact_check":
                     ORD = Path(str(args.get("ordner", "")))
                     klasse = re.sub(r'\W', '', str(args.get("klasse", "")))
