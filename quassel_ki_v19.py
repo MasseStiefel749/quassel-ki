@@ -368,10 +368,10 @@ def chat_erinnerung_speichern(frage, antwort):
 
 # ---------- v18: quassel-Paket (Hardware, Router, Memory 2.0, Konfig) ----------
 try:
-    from quassel import hardware as HW, konfig as KONF, memory2 as MEM2, modelle as ROUTER, projekte as PROJ, schmiede as SCH, buildtest as BTEST
+    from quassel import hardware as HW, konfig as KONF, memory2 as MEM2, modelle as ROUTER, projekte as PROJ, schmiede as SCH, buildtest as BTEST, impact as IMP
     _HAT_QUASSEL_PAKET = True
 except Exception:
-    HW = KONF = MEM2 = ROUTER = PROJ = SCH = BTEST = None
+    HW = KONF = MEM2 = ROUTER = PROJ = SCH = BTEST = IMP = None
     _HAT_QUASSEL_PAKET = False
 try:
     QCFG = KONF.laden(str(WORKSPACE / "quassel-ki" / "quassel.yaml")) if _HAT_QUASSEL_PAKET else {}
@@ -1003,6 +1003,10 @@ class MCPClient:
                     klasse = re.sub(r'\W', '', str(args.get("klasse", "")))
                     if not klasse: return "Klasse fehlt."
                     if not ctx["pc"]._im_erlaubten_bereich(ORD): return "Pfad außerhalb der erlaubten Ordner – abgelehnt."
+                    if _HAT_QUASSEL_PAKET:
+                        a = IMP.analysieren(str(ORD), klasse)
+                        if a.get("fehler"): return a["fehler"]
+                        return IMP.bericht(a)
                     treffer = []
                     try:
                         for f in ORD.rglob("*"):
@@ -2508,12 +2512,40 @@ class QuasselKI:
         if self._god_an: return "voll"
         if self.pc_erlaubt.get(): return "auto"
         return "fragen"
+    def _schreib_risiko(self, datei):
+        """Phase 7: Impact vor jedem Schreiben. Schnell (Modul-Ordner), ohne Modell."""
+        try:
+            if not _HAT_QUASSEL_PAKET or not datei:
+                return "UNKNOWN"
+            r = IMP.datei_risiko(str(datei))
+            if r:
+                return r
+            p = Path(str(datei))
+            basis = p.parent if p.parent.is_dir() else None
+            if not basis:
+                return "UNKNOWN"
+            stamm = re.sub(r"\W", "", p.stem)
+            if not stamm:
+                return "LOW"
+            a = IMP.analysieren(str(basis), stamm, max_treffer=20)
+            return a.get("risiko", "UNKNOWN")
+        except Exception:
+            return "UNKNOWN"
     def _tool_darf(self, tool, args):
         """True = ausführen. Fragt nach je nach Klasse + Permit-Stufe (aus Worker-Thread sicher)."""
         tname = tool.split("/", 1)[-1]
         stufe = self._permit_stufe()
         if tname in LESE_TOOLS or tname in (self.plugin_tools or {}):
             return True
+        if tname in ("datei_schreiben", "text_ersetzen"):
+            # Phase 7: Impact VOR allem anderen – HIGH/CRITICAL nie autonom schreiben
+            risiko = self._schreib_risiko(str(args.get("datei", "")))
+            if risiko in ("HIGH", "CRITICAL"):
+                if stufe == "voll":
+                    self._ui(lambda r=risiko: self.log("sys", f"⚠️ Impact {r} – schreibe trotzdem (Alles-Modus, deine Verantwortung)."))
+                else:
+                    self._ui(lambda r=risiko, t=tname: self.log("sys", f"🛡 Schreibschutz (Impact {r}): {t} verweigert. Ich mache Plan + Diff-Vorschlag statt zu schreiben."))
+                    return False
         if stufe == "voll":
             return True
         vorschau = json.dumps(args, ensure_ascii=False)[:400]

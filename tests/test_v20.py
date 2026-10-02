@@ -9,7 +9,7 @@ SYS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if SYS not in sys.path:
     sys.path.insert(0, SYS)
 
-from quassel import hardware as HW, konfig as KONF, modelle as R, memory2 as M2, schmiede as S, buildtest as B
+from quassel import hardware as HW, konfig as KONF, modelle as R, memory2 as M2, schmiede as S, buildtest as B, impact as I
 
 
 def profil_mit(vram, ram=32, gpu_namen=("Test GPU",)):
@@ -254,6 +254,53 @@ class BuildTestPhase6Test(unittest.TestCase):
         self.assertFalse(erg["ok"])
         self.assertTrue(erg["analyse"]["fehler"])
         self.assertIn("Paket", erg["analyse"]["ursache"])
+
+
+class ImpactPhase7Test(unittest.TestCase):
+    def setUp(self):
+        import tempfile as _t
+        self.tmp = _t.mkdtemp()
+        src = os.path.join(self.tmp, "Source", "Spiel")
+        os.makedirs(src)
+        with open(os.path.join(src, "HeldBase.h"), "w", encoding="utf-8") as f:
+            f.write("class AHeldBase {};\n")
+        with open(os.path.join(src, "Gegner.cpp"), "w", encoding="utf-8") as f:
+            f.write('#include "HeldBase.h"\nAHeldBase* h;\n')
+        with open(os.path.join(src, "HeldBaseTest.cpp"), "w", encoding="utf-8") as f:
+            f.write("TEST(AHeldBase) {}\n")
+        with open(os.path.join(self.tmp, "Karte.umap"), "wb") as f:
+            f.write(b"\x00AHeldBase\x00")
+        with open(os.path.join(self.tmp, "Allein.cpp"), "w", encoding="utf-8") as f:
+            f.write("int einsam = 1;\n")
+
+    def test_referenzen_modul_tests(self):
+        a = I.analysieren(self.tmp, "AHeldBase")
+        self.assertIn(os.path.join("Source", "Spiel", "Gegner.cpp"), a["referenzen"])
+        self.assertIn("Spiel", a["module"])
+        self.assertEqual(len(a["tests"]), 1)
+
+    def test_binaer_asset_gefunden(self):
+        a = I.analysieren(self.tmp, "AHeldBase")
+        self.assertIn("Karte.umap", a["maps_assets"])
+
+    def test_eigene_datei_keine_referenz(self):
+        a = I.analysieren(self.tmp, "AHeldBase")
+        self.assertFalse(any("HeldBase.h" in r for r in a["referenzen"]))
+
+    def test_risiko_steigt_mit_nutzern(self):
+        a = I.analysieren(self.tmp, "AHeldBase")
+        self.assertIn(a["risiko"], ("MEDIUM", "HIGH"))
+        a2 = I.analysieren(self.tmp, "Allein")
+        self.assertEqual(a2["risiko"], "LOW")
+
+    def test_datei_risiko_config(self):
+        self.assertEqual(I.datei_risiko("Config/Default.ini"), "HIGH")
+        self.assertEqual(I.datei_risiko("Spiel.uproject"), "CRITICAL")
+        self.assertEqual(I.datei_risiko("Source/X.cpp"), "")
+
+    def test_bericht(self):
+        b = I.bericht(I.analysieren(self.tmp, "AHeldBase"))
+        self.assertIn("Empfehlung", b)
 
 
 if __name__ == "__main__":
