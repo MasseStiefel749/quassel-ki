@@ -129,8 +129,11 @@ def _confidence(text, stark, quelle):
         c -= 0.1
     if _ZUKUNFT.search(text):
         c -= 0.45
-    if len(text.split()) < 3:
+    worte = len(text.split())
+    if worte < 2:
         c -= 0.2
+    elif worte == 2:
+        c -= 0.05
     if re.search(r"\b(nie|kein|nicht)\b.*\b(tun|machen|ändern)\b", text, re.I):
         c -= 0.3  # klingt nach Verbot, nicht Auftrag
     return round(max(0.05, min(0.98, c)), 2)

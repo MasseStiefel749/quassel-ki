@@ -28,6 +28,15 @@ agent:
   max_runden: 8
   self_check: true
 
+projekte:
+  # Nur diese Ordner werden gescannt (nie der ganze Rechner). Beispiele:
+  # - "C:/Users/Marc/Documents/Unreal"
+  # - "D:/Projects"
+  scan_pfade: []
+  tiefe: 2
+  min_confidence: 0.8
+  max_risk: MEDIUM
+
 safety:
   confirmations: true
 

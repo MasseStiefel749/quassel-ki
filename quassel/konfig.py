@@ -25,6 +25,7 @@ DEFAULTS = {
     "memory": {"enabled": True, "retrieval": True, "limit_fakten": 8},
     "context": {"adaptive": True, "verlauf_limit": 10},
     "agent": {"enabled": True, "max_runden": 8, "self_check": True},
+    "projekte": {"scan_pfade": [], "tiefe": 2, "min_confidence": 0.8, "max_risk": "MEDIUM"},
     "safety": {"confirmations": True},
     "speed": {"modus": "SMART"},
 }

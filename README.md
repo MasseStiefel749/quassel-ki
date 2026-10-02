@@ -2,7 +2,7 @@
 
 Lokaler **AI Game Development Assistant** für Unreal Engine (UE 5.8) – läuft komplett offline auf dem eigenen PC, kein Cloud-Abo, keine Daten gehen raus.
 
-**Stand: v18 Foundation** – Brain-Router (Difficulty → Rolle → Modell), Hardware-Profil beim Start, Speed-Modes, adaptives Context-Budget, Memory 2.0 (Typen/Quellen/Confidence), Agent Self-Check + Lesson-Loop, `quassel.yaml`-Konfig, echter Benchmark. Details: `docs/`.
+**Stand: v19 Autonomous Project Agent** – Stumm/Quasseln-Stop/Agent-Stop/Not-Aus, Projekt-Scanner (Unreal/Python/Node/C++/…), Task-Discovery mit Confidence+Risk, Find&Finish-Loop mit Git-Checkpoints. Details: `docs/`.
 
 ## Start
 
@@ -37,6 +37,9 @@ Limit: max ~20 GB Modell-Speicher.
 |---|---|
 | `/mode ask` / `/mode agent` | Nur reden / arbeiten mit Werkzeugen |
 | `/speed FAST\|BALANCED\|SMART\|MAXIMUM` | Tempo vs. Gründlichkeit (v18) |
+| `/stumm` `/quasseln` | Stumm / Quasseln-Stop umschalten (v19) |
+| `/scan [Pfad]` `/finish` | Projekte scannen / Find&Finish-Loop (v19) |
+| `/agentstop` `/stopalles` | Agent sauber anhalten / Not-Aus (v19) |
 | `/schmiede Idee…` | Spielidee → GDD.md + tasks.md + klassen.md |
 | `/geruest Spielname` | Echtes `.uproject` + Source + Config |
 | `/tasks` `/logcheck` `/impact Klasse` | Fortschritt, Log-Fehler, Abhängigkeiten |
@@ -48,6 +51,10 @@ Limit: max ~20 GB Modell-Speicher.
 ## Sicherheit
 
 - **Lesen ist Standard**, Schreiben/Ausführen fragt nach (Diff-Vorschau).
+- Stumm (🔇) = Arbeit ohne Worte; Quasseln-Stop (🛑) = nur Spontanes aus;
+  Agent-Stop (⛔) = keine neuen Tools, Status gespeichert; STOP ALLES = Not-Aus.
+- Find&Finish bearbeitet NUR Tasks mit hoher Confidence + Risiko LOW/MEDIUM,
+  HIGH/CRITICAL brauchen dich. Pro Task ein Git-Checkpoint-Branch, nie Auto-Push.
 - Blockliste für gefährliche Pfade/Befehle, alles landet in `aktionen.log`.
 - Live-Maus/Tastatur nur per Button, Fail-Safe: Maus in die Ecke = Stopp.
 - Stimme geht bei Teams-Calls automatisch aus (`QUASSEL_VOICE=0`).
