@@ -368,10 +368,10 @@ def chat_erinnerung_speichern(frage, antwort):
 
 # ---------- v18: quassel-Paket (Hardware, Router, Memory 2.0, Konfig) ----------
 try:
-    from quassel import hardware as HW, konfig as KONF, memory2 as MEM2, modelle as ROUTER, projekte as PROJ, schmiede as SCH, buildtest as BTEST, impact as IMP
+    from quassel import hardware as HW, konfig as KONF, memory2 as MEM2, modelle as ROUTER, projekte as PROJ, schmiede as SCH, buildtest as BTEST, impact as IMP, auftrag as AUF
     _HAT_QUASSEL_PAKET = True
 except Exception:
-    HW = KONF = MEM2 = ROUTER = PROJ = SCH = BTEST = IMP = None
+    HW = KONF = MEM2 = ROUTER = PROJ = SCH = BTEST = IMP = AUF = None
     _HAT_QUASSEL_PAKET = False
 try:
     QCFG = KONF.laden(str(WORKSPACE / "quassel-ki" / "quassel.yaml")) if _HAT_QUASSEL_PAKET else {}
@@ -2245,7 +2245,9 @@ class QuasselKI:
         if an:
             if self._generating:
                 self.finish_var.set(False); self.bot_sagt("Erst läuft noch was – danach 🚀 nochmal."); return
-            self._agent_stop = False
+        self._agent_stop = False
+        self._auftrag_stand = None  # Phase 8: Retry-Tracking pro Find&Finish-Task
+        self._letzter_selfcheck = "UNKNOWN"
             self.log("sys", "🚀 FIND & FINISH an: nur sichere Tasks (Confidence hoch, Risiko LOW/MEDIUM), Git-Checkpoint pro Task.")
             threading.Thread(target=self._finish_loop, daemon=True).start()
         else:
@@ -2277,13 +2279,34 @@ class QuasselKI:
             except Exception: pass
             self._zustand_refresh()
     def _finish_eine_aufgabe(self, t):
+        # Phase 8 Zyklus: Impact -> Retry-Gate -> Checkpoint -> Agent -> Testnachweis -> Doku
         name, pfad = t["projekt"], t["pfad"]
+        task_id = f"{name}:{t.get('datei','')}:{t.get('zeile','')}:{t['text'][:40]}"
+        if not hasattr(self, "_auftrag_stand") or self._auftrag_stand is None:
+            self._auftrag_stand = AUF.neuer_stand() if _HAT_QUASSEL_PAKET else {}
+        try:
+            if _HAT_QUASSEL_PAKET and not AUF.darf_nochmal(self._auftrag_stand, task_id):
+                self._ui(lambda: self.log("sys", f"🚀 Übersprungen (3 Versuche verbraucht, Ursache dokumentiert)."))
+                return
+        except Exception: pass
         self._ui(lambda: self.log("sys", f"🚀 Task [{t['risk']}/{t['confidence']:.2f}] {t['text'][:80]} ({name})"))
-        # Git-Checkpoint: eigener Branch, kein Push
+        # 1. Impact: HIGH an der Fundstelle -> nicht autonom, dem Nutzer vorlegen
+        try:
+            if _HAT_QUASSEL_PAKET and t.get("datei"):
+                a = IMP.analysieren(pfad, Path(t["datei"]).stem, max_treffer=20)
+                if a.get("risiko") in ("HIGH", "CRITICAL"):
+                    AUF.fehlversuch(self._auftrag_stand, task_id, f"Impact {a['risiko']} – braucht dich")
+                    self._ui(lambda: self.bot_sagt(f"🚀 Task braucht dich (Impact {a['risiko']}): {t['text'][:100]}\n{IMP.bericht(a)[:600]}"))
+                    return
+        except Exception: pass
+        # 2. Git-Checkpoint: eigener Branch + HEAD merken (Rollback), kein Push
+        head = ""
         try:
             slug = re.sub(r"\W+", "-", t["text"].lower())[:30].strip("-") or "task"
             erg = self.mcp.aufrufen("lokal/git_branch", {"ordner": pfad, "name": f"quassel/auto-{slug}"}, self._mcp_ctx())
             self._ui(lambda e=str(erg)[:150]: self.log("sys", f"🌿 Checkpoint: {e}"))
+            if _HAT_QUASSEL_PAKET:
+                head = AUF.checkpoint_head(pfad)
         except Exception: pass
         # Projektregeln lesen (haben Priorität)
         regeln_text = ""
@@ -2299,16 +2322,71 @@ class QuasselKI:
             "Arbeite NUR in diesem Projektordner. Lies erst relevante Dateien, plane, ändere minimal, "
             "teste (Build/Tests wenn vorhanden), prüfe den Diff. Halte dich an diese Projektregeln:"
             + (regeln_text or " (keine Regeldateien gefunden)"))
+        fehler_txt = ""
         try:
             self._agent_arbeit(aufgabe)  # nutzt Router, Permit, Self-Check, Lessons
+            if getattr(self, "_letzter_selfcheck", "UNKNOWN") == "LOW":
+                fehler_txt = "Self-Check LOW"
         except Exception as e:
+            fehler_txt = str(e)[:200]
             self._ui(lambda e=e: self.log("sys", f"🚀 Task-Fehler: {e}"))
+        # 3. Testnachweis: geänderte Dateien seit Checkpoint prüfen
+        nachweis = "keine Änderungen"
+        try:
+            if _HAT_QUASSEL_PAKET and head:
+                geaendert = AUF.geaenderte_dateien(pfad, head)
+                if geaendert:
+                    nachweis = self._testnachweis(pfad, geaendert)
+        except Exception as e:
+            nachweis = f"Nachweis fehlgeschlagen: {e}"
+        self._ui(lambda n=nachweis: self.log("sys", f"🧪 Testnachweis: {n[:300]}"))
+        # 4. Fehlversuch oder Erfolg verbuchen (3 Strikes -> dokumentieren + nächste)
+        try:
+            if _HAT_QUASSEL_PAKET:
+                if fehler_txt or nachweis.startswith("FEHLER"):
+                    aufg = AUF.fehlversuch(self._auftrag_stand, task_id, fehler_txt or nachweis)
+                    if aufg:
+                        grund = "; ".join(f.get("grund", "") for f in self._auftrag_stand["aufgaben"][task_id]["fehler"])
+                        MEM2.hinzufuegen(str(MEMORY2_PFAD), "lesson",
+                            f"{name}: {t['text'][:100]} aufgegeben nach 3 Versuchen. Ursachen: {grund[:200]}",
+                            quelle="find-finish", vertrauen=0.8, projekt=name, wichtigkeit=4)
+                        self._ui(lambda: self.log("sys", "🚀 3 Versuche verbraucht – Ursache dokumentiert, nächste Aufgabe."))
+                else:
+                    AUF.erfolg(self._auftrag_stand, task_id, nachweis[:150])
+                    self.mcp.aufrufen("lokal/doku_update", {"spiel": name, "eintrag": f"🚀 {t['text'][:120]} – {nachweis[:200]}"}, self._mcp_ctx())
+        except Exception: pass
         try:  # Index für dieses Projekt auffrischen
             for i, p in enumerate(self.projekt_index):
                 if p.get("pfad") == pfad:
                     self.projekt_index[i] = PROJ.projekt_analysieren(pfad)
                     break
         except Exception: pass
+    def _testnachweis(self, pfad, dateien):
+        """Jeder Fix braucht einen Nachweis: .py kompilieren/laufen lassen, .h statisch prüfen."""
+        geprueft, fehler = 0, []
+        for d in dateien[:8]:
+            try:
+                p = Path(pfad) / d
+                if p.suffix.lower() == ".py":
+                    r = BTEST.lauf("python_skript" if "test" not in p.name.lower() else "python_test",
+                                   str(p), cwd=str(p.parent), timeout=120,
+                                   log_ordner=str(WORKSPACE / "quassel-ki" / "logs"))
+                    geprueft += 1
+                    if not r.get("ok"):
+                        fehler.append(f"{d}: {r.get('grund') or 'Exit ' + str(r.get('exit'))}")
+                elif p.suffix.lower() == ".h":
+                    txt = p.read_text(encoding="utf-8", errors="replace")
+                    if "GENERATED_BODY()" not in txt and "class" in txt:
+                        fehler.append(f"{d}: GENERATED_BODY() prüfen")
+                    else:
+                        geprueft += 1
+                else:
+                    geprueft += 1  # Doku/Config: Diff reicht
+            except Exception as e:
+                fehler.append(f"{d}: {e}")
+        if fehler:
+            return "FEHLER: " + "; ".join(fehler[:3])
+        return f"{geprueft} Datei(en) geprüft, keine Befunde."
     def _hw_start(self):
         """v18: Hardware-Profil + Memory-Migration im Hintergrund (blockiert UI nie)."""
         try:
@@ -2737,6 +2815,8 @@ class QuasselKI:
                           if x.get("role") == "user" and x.get("content", "").startswith("[Tool")]
                 if spuren:
                     conf, risiko = self._self_check(aufgabe, spuren)
+                    try: self._letzter_selfcheck = conf  # Phase 8: Finish-Loop wertet aus
+                    except Exception: pass
                     if conf == "LOW":
                         self._ui(lambda r=risiko: self.bot_sagt(
                             "⚠️ Mein Selbst-Check ist unsicher" + (f": {r}" if r else "") +

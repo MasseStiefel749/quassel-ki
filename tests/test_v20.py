@@ -9,7 +9,7 @@ SYS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if SYS not in sys.path:
     sys.path.insert(0, SYS)
 
-from quassel import hardware as HW, konfig as KONF, modelle as R, memory2 as M2, schmiede as S, buildtest as B, impact as I
+from quassel import hardware as HW, konfig as KONF, modelle as R, memory2 as M2, schmiede as S, buildtest as B, impact as I, auftrag as AUF
 
 
 def profil_mit(vram, ram=32, gpu_namen=("Test GPU",)):
@@ -301,6 +301,47 @@ class ImpactPhase7Test(unittest.TestCase):
     def test_bericht(self):
         b = I.bericht(I.analysieren(self.tmp, "AHeldBase"))
         self.assertIn("Empfehlung", b)
+
+
+class AuftragPhase8Test(unittest.TestCase):
+    def test_drei_strikes(self):
+        st = AUF.neuer_stand()
+        self.assertTrue(AUF.darf_nochmal(st, "T001"))
+        self.assertFalse(AUF.fehlversuch(st, "T001", "Fehler 1"))
+        self.assertFalse(AUF.fehlversuch(st, "T001", "Fehler 2"))
+        self.assertTrue(AUF.fehlversuch(st, "T001", "Fehler 3"))  # aufgegeben
+        self.assertFalse(AUF.darf_nochmal(st, "T001"))
+        self.assertEqual(len(st["aufgaben"]["T001"]["fehler"]), 3)
+
+    def test_erfolg_setzt_zurueck(self):
+        st = AUF.neuer_stand()
+        AUF.fehlversuch(st, "T002", "x")
+        AUF.erfolg(st, "T002", "Build grün")
+        self.assertFalse(AUF.darf_nochmal(st, "T002"))
+
+    def test_rollback_echt(self):
+        import subprocess as _sp
+        import tempfile as _t
+        d = _t.mkdtemp()
+        _sp.run(["git", "init"], cwd=d, capture_output=True)
+        _sp.run(["git", "config", "user.email", "t@t.de"], cwd=d, capture_output=True)
+        _sp.run(["git", "config", "user.name", "t"], cwd=d, capture_output=True)
+        with open(os.path.join(d, "a.txt"), "w") as f:
+            f.write("eins\n")
+        _sp.run(["git", "add", "-A"], cwd=d, capture_output=True)
+        _sp.run(["git", "commit", "-m", "init"], cwd=d, capture_output=True)
+        head = AUF.checkpoint_head(d)
+        self.assertTrue(head)
+        with open(os.path.join(d, "a.txt"), "w") as f:
+            f.write("KAPUTT\n")
+        ok, msg = AUF.rollback(d, head)
+        self.assertTrue(ok, msg)
+        with open(os.path.join(d, "a.txt")) as f:
+            self.assertEqual(f.read(), "eins\n")
+        # geänderte Dateien erkennt er auch
+        with open(os.path.join(d, "a.txt"), "w") as f:
+            f.write("zwei\n")
+        self.assertIn("a.txt", AUF.geaenderte_dateien(d, head))
 
 
 if __name__ == "__main__":
