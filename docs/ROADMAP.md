@@ -1,35 +1,31 @@
-# Roadmap: Quassel wird erwachsen
+# Roadmap: Quassel wird erwachsen (Stand 02.10.2026, v20)
 
-Jede Version braucht messbare Verbesserung + Test. Kein Fake.
+Jede Version braucht messbare Verbesserungen + Tests. Kein Fake.
 
-## v18 Foundation (diese Runde)
+## Erledigt (BESTÄTIGT durch Tests)
 
-- [ ] `quassel/`-Paket: hardware, modelle (Rollen+Auswahl), memory2, konfig
-- [ ] `quassel.yaml`: alle Einstellungen aus dem Code gezogen
-- [ ] Hardware-Profil beim Start (`/status` zeigt GPU/VRAM/RAM/Modelle)
-- [ ] Brain-Router: Difficulty (TRIVIAL–MAX) → Rolle → Modell, Speed-Modes
-- [ ] Context-Budget `context_budget()` statt fix 8192
-- [ ] Memory 2.0 Basis: Typen/Quellen/Confidence + Migration
-- [ ] Agent Self-Check nach komplexen Aufgaben + Feedback-Loop (Lessons)
-- [ ] `quassel_benchmark.py`: echte Messwerte (Ladezeit, tok/s, Mini-Tasks)
-- [ ] `tests/`: Modul-Tests, headless lauffähig
-- [ ] Messbar: `/status` zeigt echte Hardware; Router-Entscheidung im Log;
-      Lessons werden bei Wiederholungsaufgaben abgerufen
+- **v18 Foundation:** `quassel/`-Paket, Brain-Router, Speed-Modes,
+  Context-Budget, Memory 2.0 Basis, Agent Self-Check, Benchmark.
+- **v19 Autonomous Project Agent:** Stumm/Stops, Projekt-Scanner,
+  Task-Discovery, Find&Finish mit Git-Checkpoints.
+- **v20 (dieser Branch):** Hardware-Profile (high/medium/small/cpu) +
+  Kapazitätsschutz, Memory vereint (Typen, Ablauf, Archiv), Unreal-Details
+  (Schema v2), tasks.json, Build/Test-Adapter, Impact + Schreibschutz,
+  Agent-Zyklen (3 Strikes, Testnachweis, Rollback).
+- Tests: 76/76 grün. Benchmarks: echte Messwerte in `logs/`.
 
-## v19 Adaptive Brain
+## Als Nächstes
 
-- Natives Ollama-Tool-Calling (Qwen2.5+) statt JSON-Block-Parsing
-- Skill-Lazy-Loading (nur benötigte Skills in den Prompt)
-- Multi-GPU-Erkennung, 4070-Profil mit echten Benchmarks
-- Messbar: Tool-Fehlerrate sinkt, Prompt schrumpft
+- Natives Ollama-Tool-Calling (statt JSON-Block-Parsing) – weniger Fragilität.
+- Skill-Lazy-Loading (nur benötigte Skills in den Prompt).
+- 4070-Profil mit echten Benchmarks (braucht den 4070-PC).
+- Konsolidierungs-Job für Memory (Duplikate, Widersprüche).
+- `ManishThota/llava_next_video` (4,7 GB) löschen, wenn moondream reicht.
 
-## v20 Memory voll
+## Blockiert (braucht Nutzer/Hardware)
 
-- Konsolidierungs-Job, Episoden-Retrieval, Decision-Memory-UI
-- Confidence-Anzeige im `/memory`
-- Messbar: Wiederholungsfragen ohne erneutes Erklären
-
-## v21+ (später)
-
-- Agent 2.0 (Plan-Dokumente), Research-Skill, Business-Skill
-- Autonome Entwicklungsaufgaben mit Verifikation
+- **Not-Aus-E2E:** braucht laufende App + echten Klick – manuell testen.
+- **UE-Build-E2E:** kein Unreal auf diesem Laptop – erst auf 4070-PC möglich.
+- **Echte 4070-Werte:** erst nach Umzug messbar.
+- **Public-Repo-Hygiene:** Chats/Shots/Logs laufen mit (Nutzer wollte public);
+  `.gitignore`-Verschärfung ausstehend (siehe Qualitätsgate).

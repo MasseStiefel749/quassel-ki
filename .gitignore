@@ -5,6 +5,20 @@ __pycache__/
 
 # Logs (ändern sich ständig)
 *.log
+logs/
+
+# Laufzeit-Daten: Sessions, Screenshots, Gedächtnis (E19 – bleibt lokal,
+# Repo ist public; Benchmarks bei Bedarf per `git add -f logs/benchmark_*.json`)
+chats/
+shots/
+spiele/
+memory.json
+memory2.json
+zusammenfassung.json
+erinnerungen.json
+projekt_index.json
+projekt_index_v19.json
+aktionen.log
 
 # Temporäres
 *.tmp

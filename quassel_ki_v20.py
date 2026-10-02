@@ -1251,7 +1251,7 @@ try: CHATS_DIR.mkdir(parents=True, exist_ok=True)
 except Exception: pass
 
 BEFEHLE = {
-    "/help": "Befehle: /neu /clear /still /laut /leise /shot /sehen /maus /memory /index /tipp /modell /ctx /skill /plugin /god /export /permit /status /review /schmiede /mode /commit /geruest /tasks /logcheck /impact /ton /verlauf /speed /stumm /scan /finish",
+    "/help": "Befehle: /neu /clear /still /laut /leise /shot /sehen /maus /memory /index /tipp /modell /ctx /skill /plugin /god /export /permit /status /review /schmiede /mode /commit /geruest /tasks /logcheck /impact /ton /verlauf /speed /stumm /quasseln /agentstop /stopalles /scan /finish",
     "/neu": None, "/clear": None, "/still": None, "/laut": None, "/leise": None,
     "/shot": None, "/sehen": None, "/maus": None, "/memory": None,
     "/index": None, "/tipp": None, "/modell": None, "/ctx": None,
@@ -1322,7 +1322,7 @@ def plugins_laden(app):
 class QuasselKI:
     def __init__(self, root):
         self.root = root
-        root.title("❯ quassel-codex v19")
+        root.title("❯ quassel-codex v20")
         root.geometry("1040x1000"); root.minsize(780, 700)
         self.sysinfo = system_check()
         p = self.sysinfo["preset"]

@@ -30,5 +30,5 @@ ollama create quassel-ki -f "$Modelfile.4070"
 ollama list
 Write-Host ""
 Write-Host "Fertig! Start mit:"
-Write-Host "  python `"$QDir\quassel_ki_v18.py`"   (oder .\start.ps1)"
+Write-Host "  python `"$QDir\quassel_ki_v20.py`"   (oder .\start.ps1)"
 Write-Host "Hinweis 4070: Ollama lagert automatisch aus (ca. 12GB VRAM + Rest RAM). Falls langsam: OLLAMA_NUM_PARALLEL=1 setzen."

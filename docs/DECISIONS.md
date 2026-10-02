@@ -54,3 +54,23 @@ Jede sichere Standardentscheidung wird hier festgehalten statt nachzufragen.
 - **E15: Alte Chats werden archiviert, nie gelöscht.**
   `chats_aufraeumen()` (Standard 30 Tage, konfigurierbar, 0 = aus),
   Recall scannt `*.json` im Root und sieht `archiv/` gar nicht.
+
+## 2026-10-02 – Phasen 4–8
+
+- **E16: Schreibschutz schlägt Permit.** Impact HIGH/CRITICAL blockiert
+  `datei_schreiben`/`text_ersetzen` in ask/auto. Nur Alles-Modus schreibt
+  trotzdem (mit Warnung) – das ist explizite Nutzerverantwortung.
+- **E17: Commit erst nach Compile+Tests.** Ein verketteter Befehl hätte
+  fast eine kaputte Datei festgeschrieben (stattdessen: prüfen, dann
+  committen). Der Zwischenfall ist per Fix-Commit dokumentiert.
+- **E18: Testnachweis ist pragmatisch, nicht vollständig.** .py läuft
+  wirklich, .h wird statisch geprüft, UBT/UE-Build nur wenn installiert
+  (sonst ehrlich „nicht verfügbar“). Kein Fake-Grün.
+
+## 2026-10-02 – Phasen 9+10
+
+- **E19: Laufzeit-Daten enttrackt (chats, shots, logs, memory*, Indizes).**
+  Repo ist public; Zukunft läuft nicht mehr mit. Historie bleibt (Rewrite
+  wäre schlimmer). Benchmarks bei Bedarf per `git add -f`.
+- **E20: Kein Push durch mich.** Alle Checkpoints lokal auf `feat/v20`.
+  Push nur mit deiner ausdrücklichen Freigabe.
