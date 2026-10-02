@@ -19,6 +19,7 @@ memory:
   enabled: true
   retrieval: true
   limit_fakten: 8
+  chat_archiv_tage: 30   # alte Chats -> chats/archiv (0 = aus, nie löschen)
 
 context:
   adaptive: true

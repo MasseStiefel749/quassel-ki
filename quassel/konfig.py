@@ -23,7 +23,7 @@ DEFAULTS = {
             "fallback": ["llama3.1:latest", "llama3.1"],
         },
     },
-    "memory": {"enabled": True, "retrieval": True, "limit_fakten": 8},
+    "memory": {"enabled": True, "retrieval": True, "limit_fakten": 8, "chat_archiv_tage": 30},
     "context": {"adaptive": True, "verlauf_limit": 10,
                 "budgets": {"TRIVIAL": 4096, "LOW": 4096, "MEDIUM": 8192, "HIGH": 16384, "MAX": 32768}},
     "chat": {"tokens": 400},

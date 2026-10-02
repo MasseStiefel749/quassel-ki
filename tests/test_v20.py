@@ -9,7 +9,7 @@ SYS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if SYS not in sys.path:
     sys.path.insert(0, SYS)
 
-from quassel import hardware as HW, konfig as KONF, modelle as R
+from quassel import hardware as HW, konfig as KONF, modelle as R, memory2 as M2
 
 
 def profil_mit(vram, ram=32, gpu_namen=("Test GPU",)):
@@ -84,6 +84,71 @@ class YamlTest(unittest.TestCase):
     def test_budget_override(self):
         b = R.context_budget("MEDIUM", 64, 10, "SMART", {"MEDIUM": 4096})
         self.assertEqual(b, 4096)
+
+
+class MemoryPhase3Test(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.pfad = os.path.join(self.tmp, "m2.json")
+
+    def test_felder_vollstaendig(self):
+        M2.hinzufuegen(self.pfad, "decision", "UBT statt Batch", quelle="chat",
+                       vertrauen=0.9, projekt="SAOMMO", wichtigkeit=5,
+                       ablauf="2099-01-01T00:00:00")
+        e = M2.laden(self.pfad)["eintraege"][0]
+        self.assertEqual(e["projekt"], "SAOMMO")
+        self.assertEqual(e["wichtigkeit"], 5)
+        self.assertEqual(e["ablauf"][:4], "2099")
+        self.assertIn("created", e)
+
+    def test_ablauf_wird_ignoriert_und_bereinigt(self):
+        M2.hinzufuegen(self.pfad, "fact", "Alter Pfad stimmt", quelle="t",
+                       ablauf="2000-01-01T00:00:00")
+        M2.hinzufuegen(self.pfad, "fact", "Alter Pfad stimmt nicht", quelle="t")
+        treffer = M2.abrufen(self.pfad, "Alter Pfad stimmt es?")
+        self.assertFalse(any("stimmt\"" in t["content"] or t["content"] == "Alter Pfad stimmt" for t in treffer))
+        n = M2.bereinigen(self.pfad)
+        self.assertEqual(n, 1)
+        self.assertEqual(len(M2.laden(self.pfad)["eintraege"]), 1)
+
+    def test_projekt_boost(self):
+        M2.hinzufuegen(self.pfad, "project_fact", "Engine ist Fünfachter", quelle="t", projekt="Anderes")
+        M2.hinzufuegen(self.pfad, "project_fact", "Engine ist Fünfneuner", quelle="t", projekt="SAOMMO")
+        treffer = M2.abrufen(self.pfad, "Welche Engine nutzen wir?", projekt="SAOMMO")
+        self.assertTrue(treffer)
+        self.assertEqual(treffer[0]["projekt"], "SAOMMO")
+
+    def test_wichtigkeit_sortiert(self):
+        M2.hinzufuegen(self.pfad, "fact", "Kaffee ist braun Getränk", quelle="t", wichtigkeit=1)
+        M2.hinzufuegen(self.pfad, "decision", "Kaffee ist braun Beschluss", quelle="t", wichtigkeit=5)
+        treffer = M2.abrufen(self.pfad, "Kaffee ist braun?")
+        self.assertTrue(treffer)
+        self.assertEqual(treffer[0]["type"], "decision")
+
+    def test_episoden_einfrieren(self):
+        epi = os.path.join(self.tmp, "epi.json")
+        with open(epi, "w", encoding="utf-8") as f:
+            import json as _j
+            _j.dump([{"frage": "Wie geht Build?", "antwort": "Mit UBT und Geduld."}], f)
+        n = M2.episoden_einfrieren(epi, self.pfad)
+        self.assertEqual(n, 1)
+        e = M2.laden(self.pfad)["eintraege"][0]
+        self.assertLess(e["confidence"], 0.7)
+
+    def test_chats_aufraeumen(self):
+        import time as _t
+        basis = os.path.join(self.tmp, "chats")
+        os.makedirs(basis)
+        alt = os.path.join(basis, "alt.json")
+        neu = os.path.join(basis, "neu.json")
+        open(alt, "w").write("{}")
+        open(neu, "w").write("{}")
+        altzeit = _t.time() - 40 * 86400
+        os.utime(alt, (altzeit, altzeit))
+        n = M2.chats_aufraeumen(basis, tage=30)
+        self.assertEqual(n, 1)
+        self.assertTrue(os.path.exists(os.path.join(basis, "archiv", "alt.json")))
+        self.assertTrue(os.path.exists(neu))
 
 
 if __name__ == "__main__":

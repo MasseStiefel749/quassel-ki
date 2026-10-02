@@ -47,6 +47,7 @@ class Sprecher:
     CHUNK = 220
     def __init__(self):
         self.q = queue.Queue(); self.aktiv = True; self.enabled = True; self.rate = 175
+        self.stumm = False  # v20-Phase3: absolute Stille (MUTE), gilt für ALLE Aufrufe
         self.stimme = "de-DE-KatjaNeural"
         self.backend = "edge" if (EDGE_OK and PYGAME_OK) else "windows"
         self.engine = None
@@ -100,6 +101,7 @@ class Sprecher:
                 except Exception as e: print("TTS:", e)
     def sprich(self, t):
         """Alles vorlesen: Text in Stücke teilen und komplett einreihen."""
+        if self.stumm: return  # STUMM = absolute Stille, keine Ausnahme
         if not self.enabled or not t: return
         if not (EDGE_OK or TTS_AVAILABLE): return
         clean = str(t).strip()
@@ -210,6 +212,14 @@ def memory_hinzu(fakt):
     return mem
 
 def memory_text():
+    # v20-Phase3: EIN System – memory2.json ist die Wahrheit, legacy wird mitgelesen
+    try:
+        if _HAT_QUASSEL_PAKET:
+            daten = MEM2.laden(str(MEMORY2_PFAD))["eintraege"]
+            lebendig = [e for e in daten if not MEM2.abgelaufen(e)]
+            if lebendig:
+                return MEM2.als_systemtext(lebendig[-20:])
+    except Exception: pass
     fakten = memory_laden().get("fakten", [])
     return "" if not fakten else "Gemerkte Fakten über Nutzer/Projekte:\n- " + "\n- ".join(fakten)
 
@@ -1272,6 +1282,8 @@ class QuasselKI:
         self.training = tk.BooleanVar(value=True)
         self.pc_erlaubt = tk.BooleanVar(value=False)
         self.sprecher = Sprecher(); self.sprecher.enabled = self.vorlesen.get()
+        try: self.sprecher.stumm = self.stumm_var.get()
+        except Exception: pass
         self.pc = SafePC(self.log)
         self.mcp = MCPClient(self.log)
         threading.Thread(target=self._mcp_autostart, daemon=True).start()
@@ -2061,12 +2073,19 @@ class QuasselKI:
         except Exception: pass
         return None, {"schwere": "?", "warum": "Fallback", "rolle": "?", "speed": self.speed_var.get()}
 
+    def _akt_projekt_name(self):
+        try:
+            if self.akt_projekt:
+                return Path(str(self.akt_projekt)).parent.name or Path(str(self.akt_projekt)).name
+        except Exception: pass
+        return ""
     def _memory2_block(self, frage):
         """v18: typisiertes Retrieval (nur Relevantes, Unsicheres markiert)."""
         try:
             if _HAT_QUASSEL_PAKET and (QCFG.get("memory", {}) or {}).get("retrieval", True):
                 lim = int((QCFG.get("memory", {}) or {}).get("limit_fakten", 8))
-                treffer = MEM2.abrufen(str(MEMORY2_PFAD), frage, limit_fakten=lim)
+                treffer = MEM2.abrufen(str(MEMORY2_PFAD), frage, limit_fakten=lim,
+                                       projekt=self._akt_projekt_name() or None)
                 if treffer: return "Gelerntes Wissen (mit Quelle, Unsicheres markiert):\n" + MEM2.als_systemtext(treffer)
         except Exception: pass
         return ""
@@ -2107,7 +2126,8 @@ class QuasselKI:
             if len(lesson) > 15:
                 MEM2.hinzufuegen(str(MEMORY2_PFAD), "lesson",
                     f"{obj.get('aufgabe', aufgabe)[:150]} -> {lesson}",
-                    quelle="agent-feedback", vertrauen=0.6 if conf == "HIGH" else 0.5)
+                    quelle="agent-feedback", vertrauen=0.6 if conf == "HIGH" else 0.5,
+                    projekt=self._akt_projekt_name(), wichtigkeit=4)
         except Exception: pass
 
     def _max_gb(self):
@@ -2237,6 +2257,12 @@ class QuasselKI:
         try:
             if _HAT_QUASSEL_PAKET and (QCFG.get("memory", {}) or {}).get("enabled", True):
                 MEM2.migrieren(str(MEMORY_PFAD), str(MEMORY2_PFAD))
+                n_ep = MEM2.episoden_einfrieren(str(WORKSPACE / "quassel-ki" / "erinnerungen.json"), str(MEMORY2_PFAD))
+                if n_ep: self._ui(lambda n=n_ep: self.log("sys", f"🧠 {n} alte Episoden als Fakten übernommen (Datei eingefroren)."))
+                tage = int((QCFG.get("memory", {}) or {}).get("chat_archiv_tage", 30) or 0)
+                if tage > 0:
+                    n_ch = MEM2.chats_aufraeumen(str(CHATS_DIR), tage)
+                    if n_ch: self._ui(lambda n=n_ch: self.log("sys", f"🗂 {n} alte Chats nach chats/archiv verschoben."))
         except Exception: pass
     def _hw_banner(self):
         """Verständliche Start-Konfiguration (Phase 2, Punkt 10). Nur echte Werte."""
@@ -2267,11 +2293,14 @@ class QuasselKI:
             return
         def _arbeit():
             try:
+                proj = self._akt_projekt_name()
                 for fakt in auto_fakten(schnipsel)[0]:
-                    memory_hinzu(fakt)
-                    try:  # v18: parallel typisiert ablegen
+                    try:  # v20-Phase3: nur noch EIN System (memory2)
                         if _HAT_QUASSEL_PAKET:
-                            MEM2.hinzufuegen(str(MEMORY2_PFAD), "fact", fakt, quelle="auto-memory", vertrauen=0.6)
+                            MEM2.hinzufuegen(str(MEMORY2_PFAD), "fact", fakt,
+                                             quelle="auto-memory", vertrauen=0.6, projekt=proj)
+                        else:
+                            memory_hinzu(fakt)
                     except Exception: pass
             except Exception: pass
         threading.Thread(target=_arbeit, daemon=True).start()
@@ -2287,6 +2316,8 @@ class QuasselKI:
     # --- v19: Stumm / Quasseln-Stop / Agent-Stop / Global-Stop ---
     def _stumm_toggle(self):
         stumm = self.stumm_var.get()
+        try: self.sprecher.stumm = stumm
+        except Exception: pass
         if stumm:
             self.sprecher.halt()
             self.log("sys", "🔇 STUMM an: ich arbeite weiter, aber sage nichts mehr.")
@@ -2381,11 +2412,23 @@ class QuasselKI:
             fakt = m[8:].strip()
             if not fakt:
                 self.bot_sagt("Was soll ich mir merken? Schreib z.B. 'merk dir mein Projekt heißt ZombieRacer'."); return
-            memory_hinzu(fakt)
+            try:
+                if _HAT_QUASSEL_PAKET:
+                    MEM2.hinzufuegen(str(MEMORY2_PFAD), "user_preference", fakt,
+                                     quelle="nutzer-direkt", vertrauen=1.0,
+                                     projekt=self._akt_projekt_name(), wichtigkeit=5)
+                else:
+                    memory_hinzu(fakt)
+            except Exception:
+                memory_hinzu(fakt)
             self.history.pop()  # Kommando nicht in den Verlauf
             self.bot_sagt(f"Gemerk! '{fakt}' – vergesse ich nicht mehr. (🧠 zeigt alles)"); return
         if "vergiss" in ml and "alles" in ml:
             MEMORY_PFAD.write_text(json.dumps({"fakten": []}, ensure_ascii=False), encoding="utf-8")
+            try:
+                if _HAT_QUASSEL_PAKET:
+                    MEM2.speichern(str(MEMORY2_PFAD), {"eintraege": []})
+            except Exception: pass
             self.bot_sagt("Alles vergessen. Neuer Mensch, neues Glück."); return
         # Live-Modell fragen (Ask redet, Agent arbeitet), sonst Offline-Fallback
         if ollama_server_ok():
@@ -2718,14 +2761,14 @@ class QuasselKI:
             except Exception: pass
             text = self._live_text.strip()
             if text:
-                self.sprecher.sprich(text)  # jede Live-Antwort wird vorgelesen
+                try:  # v19: STUMM gilt überall (kein Vorbeisprechen)
+                    if not self.stumm_var.get():
+                        self.sprecher.sprich(text)  # jede Live-Antwort wird vorgelesen
+                except Exception:
+                    try: self.sprecher.sprich(text)
+                    except Exception: pass
                 self.history.append({"role": "assistant", "content": text[:1500]})
                 self._ctx_kuerzen()
-                try:  # v17: merkt sich Austausch themenübergreifend
-                    letzte_frage = next((x.get("content", "") for x in reversed(self.history) if x.get("role") == "user"), "")
-                    if letzte_frage and len(letzte_frage) > 15:
-                        threading.Thread(target=chat_erinnerung_speichern, args=(letzte_frage, text), daemon=True).start()
-                except Exception: pass
             self.letzte_bot = time.time(); self.redelust = max(0, self.redelust - 25)
             self._generating = False
             try: self.send_btn.config(state="normal")
@@ -2882,6 +2925,20 @@ class QuasselKI:
         self.anhaenge.append(pf); self._anhang_refresh()
         self.bot_sagt(f"Angehängt: {Path(pf).name}. Stell jetzt deine Frage dazu – ich lese die Datei mit.")
     def memory_zeigen(self):
+        # v20-Phase3: einheitliches typisiertes Memory (memory2.json ist die Wahrheit)
+        try:
+            if _HAT_QUASSEL_PAKET:
+                weg = MEM2.bereinigen(str(MEMORY2_PFAD))
+                daten = MEM2.laden(str(MEMORY2_PFAD))["eintraege"]
+                if weg: self.log("sys", f"🧠 {weg} abgelaufene Erinnerungen aufgeräumt.")
+                if not daten:
+                    self.bot_sagt("Noch nichts gemerkt – ich lerne beim Reden automatisch dazu."); return
+                txt = "\n".join(f"• [{e.get('type')}] {e.get('content','')[:90]}"
+                                f"{' [' + e['projekt'] + ']' if e.get('projekt') else ''}"
+                                f" (W{e.get('wichtigkeit', 3)}, {e.get('confidence', '?')})" for e in daten[-15:])
+                self.bot_sagt(f"Mein Gedächtnis ({len(daten)} Einträge):\n{txt}")
+                return
+        except Exception: pass
         fakten = memory_laden().get("fakten", [])
         txt = "Noch nichts gemerkt. Sag 'merk dir ...'." if not fakten else "\n".join(f"• {f}" for f in fakten)
         if fakten and messagebox.askyesno("Memory", f"Gemerkte Fakten:\n{txt}\n\nAlles vergessen?"):
