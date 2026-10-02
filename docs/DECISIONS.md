@@ -38,3 +38,19 @@ Jede sichere Standardentscheidung wird hier festgehalten statt nachzufragen.
 - **E11: Dateiname bleibt `quassel_ki_v19.py` bis zum Phasenende.**
   Umbenennen auf v20 erst, wenn alle Phasen drin sind (weniger
   Verwechslungsrisiko während der Arbeit).
+
+## 2026-10-02 – Phase 3
+
+- **E12: `memory2.json` ist die einzige Wahrheit.** `memory.json` wird
+  nicht mehr beschrieben (eingefroren, wird mitgelesen). `memory_text()`
+  liefert typisierte Einträge, sodass alle alten Leser automatisch das
+  einheitliche System sehen.
+- **E13: STUMM sitzt im Sprecher, nicht an 10 Aufrufstellen.**
+  `Sprecher.stumm` blockt absolut. Dabei einen STUMM-Bypass im
+  Stream-Finalize gefunden und mitgefixt.
+- **E14: Episoden werden eingefroren, nicht gelöscht.**
+  `erinnerungen.json`-Inhalt wird einmalig niedrig-vertraut übernommen,
+  danach keine neuen Episoden (Fakten + Summary + Chatdateien reichen).
+- **E15: Alte Chats werden archiviert, nie gelöscht.**
+  `chats_aufraeumen()` (Standard 30 Tage, konfigurierbar, 0 = aus),
+  Recall scannt `*.json` im Root und sieht `archiv/` gar nicht.
