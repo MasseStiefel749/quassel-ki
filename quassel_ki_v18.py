@@ -1994,7 +1994,8 @@ class QuasselKI:
     def _router_modell(self, frage):
         """v18: Brain-Router -> (modell, protokoll). Echte Entscheidung, geloggt."""
         try:
-            if _HAT_QUASSEL_PAKET and (QCFG.get("modelle", {}) or {}).get("auto_select", True):
+            if _HAT_QUASSEL_PAKET and (QCFG.get("modelle", {}) or {}).get("auto_select", True) \
+                    and self.installierte_modelle:
                 proto = ROUTER.entscheidungs_protokoll(frage, self.speed_var.get())
                 rollen = ((QCFG.get("modelle", {}) or {}).get("rollen", {}) or None)
                 modell = ROUTER.waehle_modell(proto["rolle"], self.installierte_modelle or None, rollen)
