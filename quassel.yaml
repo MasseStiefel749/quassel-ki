@@ -1,0 +1,35 @@
+quassel:
+  intelligence_mode: SMART   # FAST | BALANCED | SMART | MAXIMUM
+  sprache: de
+
+hardware:
+  auto_detect: true
+
+modelle:
+  auto_select: true
+  rollen:
+    fast: ["llama3.1:latest", "llama3.1"]
+    coding: ["quassel-ki:latest", "quassel-ki"]
+    reasoning: ["quassel-ki:latest", "quassel-ki"]
+    vision: ["moondream:latest", "moondream"]
+    fallback: ["llama3.1:latest", "llama3.1"]
+
+memory:
+  enabled: true
+  retrieval: true
+  limit_fakten: 8
+
+context:
+  adaptive: true
+  verlauf_limit: 10
+
+agent:
+  enabled: true
+  max_runden: 8
+  self_check: true
+
+safety:
+  confirmations: true
+
+speed:
+  modus: SMART
